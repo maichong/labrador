@@ -1,0 +1,28 @@
+{
+  "name": "labrador",
+  "version": "0.2.1",
+  "description": "微信小程序模块化开发框架",
+  "keywords": [
+    "wxa",
+    "wxapp",
+    "weixin",
+    "wechat"
+  ],
+  "main": "index.js",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maichong/labrador.git"
+  },
+  "author": {
+    "email": "liang@maichong.it",
+    "name": "liang",
+    "url": "https://github.com/liangxingchen"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/maichong/labrador/issues"
+  },
+  "homepage": "https://github.com/maichong/labrador#readme"
+}
