@@ -74,6 +74,12 @@ Component.prototype.init = function (key, parent) {
     this.data = {};
   }
 
+  const me = this;
+  Object.getOwnPropertyNames(this.constructor.prototype).forEach(function (name) {
+    if (name === 'constructor') return;
+    me[name] = me.constructor.prototype[name];
+  });
+
   //处理
   if (this._appendData) {
     for (let i in this._appendData) {
@@ -118,7 +124,6 @@ Component.prototype.init = function (key, parent) {
     }
   };
 
-  const me = this;
   ['onReady', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'].forEach(function (name) {
     let func = me[name];
     me[name] = function () {
