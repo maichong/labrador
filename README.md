@@ -172,6 +172,9 @@ export default class Title extends wx.Component {
 
 代码和微信小程序框架中的page很相似。最大的区别是在js逻辑代码中，没有调用全局的`Page()`函数声明页面，而是用 `export` 语法导出了一个默认的类，这个类需要继承与 `labrador.Component` 组件基类。
 
+> **注意** 组件中事件响应方法必须以 `handle` 开头！例如上文中的 `handleTap`
+
+
 ## 页面
 
 我们要求所有的页面必须存放在 `pages` 目录中，每个页面的子目录中的文件格式和自定义组件一致，只是可以多出一个 `*.json` 配置文件。
