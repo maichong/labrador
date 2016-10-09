@@ -7,8 +7,13 @@
 'use strict';
 
 const labrador = module.exports = {};
+labrador.default = labrador;
 
-labrador.createPage = require('./create-page');
+labrador.Component = require('./component');
+
+labrador.__defineGetter__('app', function () {
+  return getApp();
+});
 
 const noPromise = {
   some: true
