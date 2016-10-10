@@ -1,7 +1,9 @@
 
 #[Labrador](https://github.com/maichong/labrador)
 
-微信小程序模块化开发框架
+微信小程序组件化开发框架
+
+> QQ交流群 282140496
 
 ## 特性
 * 使用Labrador框架可以使微信开发者工具支持加载海量NPM包
