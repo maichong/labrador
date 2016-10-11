@@ -9,135 +9,203 @@
 /**
  * 组件类
  * @class Component
- * @param {object} [data] 组件初始化数据
+ * @param {object} [props] 组件props初始数据
  */
-function Component(data) {
-  this._appendData = data;
+function Component(props) {
+  this._props = props || {};
+  this._refs = {};
+  if (!this.props) {
+    this.props = {};
+  }
 }
 
 /**
  * 设置模板数据
  * @param {object|string} data
+ * @param {object} [value]
  */
-function setData(data) {
-  let original = this.parent.data[this.key] || {};
-  let res = Object.assign(original);
-  for (let i in data) {
-    if (data.hasOwnProperty(i)) {
-      res[i] = data[i];
-    }
+Component.prototype.setData = function setData(data, value) {
+  var me = this;
+  if (typeof data === 'string') {
+    var tmp = {};
+    tmp[data] = value;
+    data = tmp;
   }
-  let obj = {};
-  obj[this.key] = res;
-  this.data = res;
-  this.parent.setData(obj);
-}
-
-function bindHandlers(page, children) {
-  Object.keys(children).forEach(function (key) {
-    if (!children.hasOwnProperty(key)) return;
-    let component = children[key];
-    Object.getOwnPropertyNames(component.constructor.prototype).concat(Object.getOwnPropertyNames(component)).forEach(function (fn) {
-      if (fn.substr(0, 6) === 'handle') {
-        let name = component.path.replace(/\./g, '_') + '_' + fn;
-        page[name] = function () {
-          component[fn].apply(component, arguments);
-        }
-      }
-    });
-    if (component.children) {
-      bindHandlers(page, component.children);
+  var original = this.data;
+  var append = {};
+  Object.keys(data).forEach(function (key) {
+    if (data[key] !== original[key]) {
+      append[key] = data[key];
     }
   });
-}
+  if (Object.keys(append).length === 0) {
+    //console.warn('忽略', this.path, 'setData');
+    return;
+  }
+  var newData = this.data = Object.assign({}, original, append);
+  //console.log(this.path + '#setData', original, '+', data, '->', newData);
+  this.parent.setData(this.key, newData);
+
+  var children = this.children;
+  if (!children) return;
+  var updatedKeys = [];
+  Object.keys(data).forEach(function (k) {
+    if (me._refs[k]) {
+      updatedKeys.push(k);
+    }
+  });
+  if (!updatedKeys.length) return;
+
+  var datas = {};
+  updatedKeys.forEach(function (k) {
+    me._refs[k].forEach(function (com) {
+      if (!datas[com.key]) {
+        datas[com.key] = {};
+      }
+      datas[com.key][k] = data[k];
+    });
+  });
+
+  Object.keys(datas).forEach(function (k) {
+    var com = children[k];
+    var d = datas[k];
+    if (__DEBUG__ && com.propTypes) {
+      Object.keys(datas[k]).forEach(function (propName) {
+        var validator = com.propTypes[propName];
+        if (typeof validator !== 'function') {
+          console.warn('组件"' + com.name + '"的"' + propName + '"属性类型检测器不是一个有效函数');
+          return;
+        }
+        var error = validator(d, propName, com.name);
+        if (error) {
+          console.warn(error.message);
+        }
+      });
+    }
+    if (com.onUpdate) {
+      com.onUpdate(d);
+    }
+    com.props = d;
+  });
+};
 
 /**
- * 初始化组件,此方法不需要手动调用
+ * 注册引用
+ * @private
+ * @param {string} ref
+ * @param {string} prop
+ * @param {Component} component
+ * @private
+ */
+Component.prototype._registerRef = function (ref, prop, component) {
+  if (!this._refs[ref]) {
+    this._refs[ref] = [];
+  }
+  this._refs[ref].push([prop, component]);
+};
+
+/**
+ * 初始化组件
  * @private
  * @param {string} key
  * @param {Component} parent
  */
-Component.prototype.init = function (key, parent) {
-  key = key || '';
-  parent = parent || null;
-  this.key = key;
-  this.parent = parent;
-  if (parent) {
-    this.setData = setData;
-  }
+Component.prototype._init = function (key, parent) {
+  var me = this;
+  me.key = key;
+  me.parent = parent;
   if (key && parent && parent.path) {
-    this.path = parent.path + '.' + key;
+    me.path = parent.path + '.' + key;
   } else {
-    this.path = key;
+    me.path = key;
   }
-  if (!this.data) {
-    this.data = {};
+  me.name = me.constructor.name || me.path;
+  //console.log(me.path + '#init', me);
+  if (!me.data) {
+    me.data = {};
   }
 
-  const me = this;
-  Object.getOwnPropertyNames(this.constructor.prototype).forEach(function (name) {
-    if (name === 'constructor') return;
-    me[name] = me.constructor.prototype[name];
+  var children = this.children || null;
+
+  Object.defineProperty(this, 'children', {
+    value: children
   });
 
-  //处理
-  if (this._appendData) {
-    for (let i in this._appendData) {
-      if (this._appendData.hasOwnProperty(i)) {
-        this.data[i] = this._appendData[i];
+  var props = Object.assign({}, this.props);
+
+  //初始化props
+  if (me._props) {
+    Object.keys(me._props).forEach(function (k) {
+      var v = me._props[k];
+      //console.log('k', '->', k, v);
+      if (typeof v === 'string' && v[0] === '@') {
+        var refKey = v.substr(1);
+        v = parent.data[refKey];
+        //console.log('refKey', refKey, v, parent.data);
+        parent._registerRef(refKey, k, me);
       }
-    }
+      if (v !== undefined) {
+        props[k] = v;
+      }
+    });
   }
 
-  if (!this.children) {
-    this.children = null;
-    return;
+  if (__DEBUG__ && me.propTypes) {
+    Object.keys(me.propTypes).forEach(function (propName) {
+      var validator = me.propTypes[propName];
+      if (typeof validator !== 'function') {
+        console.warn('组件"' + me.name + '"的"' + propName + '"属性类型检测器不是一个有效函数');
+        return;
+      }
+      var error = validator(props, propName, me.name);
+      if (error) {
+        console.warn(error.message);
+      }
+    });
   }
 
-  for (let k in this.children) {
-    if (this.children.hasOwnProperty(k)) {
-      let component = this.children[k];
-      component.init(k, this);
-      this.data[k] = component.data;
-    }
+  if (me.onUpdate) {
+    me.props = {};
+    me.onUpdate(props);
   }
+  me.props = props;
 
-  if (!parent) {
-    //Top Page
-    bindHandlers(this, this.children);
-  }
+  if (children) {
+    //优化性能
+    var existFn = [];
+    var allFn = ['onLoad', 'onReady', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'];
 
-  let onLoad = this.onLoad;
+    //var data = {};
+    //初始化children
+    Object.keys(children).forEach(function (k) {
+      var component = children[k];
+      component._init(k, me);
+      //data[k] = component.data;
 
-  this.onLoad = function () {
-    for (let key in this.children) {
-      if (this.children.hasOwnProperty(key)) {
-        let com = this.children[key];
-        com.parent = this;
-        if (com.onLoad) {
-          com.onLoad.apply(com, arguments);
+      allFn.forEach(function (name) {
+        if (existFn.indexOf(name) === -1 && component[name]) {
+          existFn.push(name);
         }
-      }
-    }
-    if (onLoad) {
-      onLoad.apply(this, arguments);
-    }
-  };
+      });
+    });
 
-  ['onReady', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'].forEach(function (name) {
-    let func = me[name];
-    me[name] = function () {
-      for (let key in this.children) {
-        let com = this.children[key];
-        if (com[name]) {
-          com[name].apply(com, arguments);
+    me.setData(this.data);
+
+    existFn.forEach(function (name) {
+      var func = me[name];
+      me[name] = function () {
+        Object.keys(children).forEach(function (k) {
+          var component = children[k];
+          if (component[name]) {
+            component[name].apply(component, arguments);
+          }
+        });
+        if (func) {
+          func.apply(this, arguments);
         }
-      }
-      if (func) {
-        func.apply(this, arguments);
-      }
-    };
-  })
+      };
+    });
+  }
 };
 
 module.exports = Component.default = Component;

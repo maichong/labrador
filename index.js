@@ -6,24 +6,30 @@
 
 'use strict';
 
-const labrador = module.exports = {};
+var labrador = module.exports = {};
 labrador.default = labrador;
 
+labrador._createPage = require('./create-page');
 labrador.Component = require('./component');
+labrador.Types = require('./types');
 
-labrador.__defineGetter__('app', function () {
-  return getApp();
+Object.defineProperty(labrador, 'app', {
+  get: function () {
+    return getApp();
+  }
 });
 
-const noPromise = {
+var noPromise = {
   some: true
 };
 
 function forEach(key) {
-  if (noPromise[key] || key.substr(0, 2) == 'on' || /\w+Sync$/.test(key)) {
+  if (noPromise[key] || key.substr(0, 2) === 'on' || /\w+Sync$/.test(key)) {
     if (wx.__lookupGetter__(key)) {
-      labrador.__defineGetter__(key, function () {
-        return wx[key];
+      Object.defineProperty(labrador, key, {
+        get: function () {
+          return wx[key];
+        }
       });
     } else {
       labrador[key] = wx;
@@ -37,16 +43,14 @@ function forEach(key) {
       obj.success = resolve;
       obj.fail = function (res) {
         if (res && res.errMsg) {
-          reject(new Error(res.errMsg))
+          reject(new Error(res.errMsg));
         } else {
           reject(res);
         }
       };
       wx[key](obj);
     });
-  }
+  };
 }
 
-for (let key in wx) {
-  forEach(key);
-}
+Object.keys(wx).forEach(forEach);

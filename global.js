@@ -4,8 +4,6 @@
  * @author Liang <liang@maichong.it>
  */
 
-'use strict';
-
 module.exports = {
   Array: Array,
   Date: Date,
