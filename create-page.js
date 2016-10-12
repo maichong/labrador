@@ -44,7 +44,7 @@ module.exports = function createPage(Component) {
   var getter = Component.prototype.__lookupGetter__('children');
   var children;
   if (!getter) {
-    children = Component.prototype.children;
+    children = t.children;
   }
 
   config.onLoad = function () {
