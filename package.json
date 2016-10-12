@@ -8,9 +8,8 @@
     "weixin",
     "wechat"
   ],
-  "main": "index.js",
-  "scripts": {
-  },
+  "main": "dist/index.js",
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/maichong/labrador.git"
@@ -24,5 +23,14 @@
   "bugs": {
     "url": "https://github.com/maichong/labrador/issues"
   },
-  "homepage": "https://github.com/maichong/labrador#readme"
+  "homepage": "https://github.com/maichong/labrador#readme",
+  "devDependencies": {
+    "babel-core": "^6.17.0",
+    "babel-plugin-transform-object-assign": "^6.8.0",
+    "babel-plugin-transform-runtime": "^6.15.0",
+    "babel-preset-latest": "^6.16.0",
+    "babel-preset-stage-0": "^6.16.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2"
+  }
 }
