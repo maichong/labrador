@@ -122,7 +122,7 @@ console.log(wx.version);
 
 wx.app;         // 和全局的 getApp() 函数效果一样，代码风格不建议粗暴地访问全局对象和方法
 wx.Component;   // Labrador 自定义组件基类
-wx.Types;       // Labrador 数据类型校验器集合
+wx.PropTypes;       // Labrador 数据类型校验器集合
 
 wx.login;       // 封装后的微信登录接口
 wx.getStorage;  // 封装后的读取缓存接口
@@ -192,7 +192,7 @@ Labrador的自定义组件，是基于微信小程序框架的组件之上，进
 import wx from 'labrador';
 import randomColor  from '../../utils/random-color';
 
-const { string } = wx.Types;
+const { string } = wx.PropTypes;
 
 export default class Title extends wx.Component {
 
@@ -466,6 +466,11 @@ export function handleTap(c, run) {
 - UglifyJS压缩集成
 - NPM包映射
 - 增加.labrador项目配置文件
+
+#### 2016-10-13
+**labrador** 0.4.2
+- 修复组件setData方法优化性能产生的数据不同步问题
+- 在DEBUG模式下输出调试信息
 
 ## 贡献者
 

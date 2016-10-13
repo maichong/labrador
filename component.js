@@ -31,20 +31,18 @@ Component.prototype.setData = function setData(data, value) {
     tmp[data] = value;
     data = tmp;
   }
-  var original = this.data;
-  var append = {};
-  Object.keys(data).forEach(function (key) {
-    if (data[key] !== original[key]) {
-      append[key] = data[key];
-    }
-  });
-  if (Object.keys(append).length === 0) {
-    //console.warn('忽略', this.path, 'setData');
-    return;
+
+  if (__DEBUG__) {
+    let original = JSON.parse(JSON.stringify(this.data));
+    let append = JSON.parse(JSON.stringify(data));
+    this.data = Object.assign({}, this.data, data);
+    //console.log(me.id, 'setData(', append, ') :', original, '->', JSON.parse(JSON.stringify(this.data)));
+    console.log('%c%s setData(%o) : %o -> %o', 'color:#2a8f99', me.id, append, original, JSON.parse(JSON.stringify(this.data)));
+  } else {
+    this.data = Object.assign({}, this.data, data);
   }
-  var newData = this.data = Object.assign({}, original, append);
-  //console.log(this.path + '#setData', original, '+', data, '->', newData);
-  this.parent.setData(this.key, newData);
+
+  this.parent.setData(this.key, this.data);
 
   var children = this.children;
   if (!children) return;
@@ -83,6 +81,7 @@ Component.prototype.setData = function setData(data, value) {
       });
     }
     if (com.onUpdate) {
+      console.log('%c%s onUpdate(%o)', 'color:#2a8f99', com.id, JSON.parse(JSON.stringify(d)));
       com.onUpdate(d);
     }
     com.props = d;
@@ -114,6 +113,7 @@ Component.prototype._init = function (key, parent) {
   var me = this;
   me.key = key;
   me.parent = parent;
+  me.id = parent.id + ':' + key;
   if (key && parent && parent.path) {
     me.path = parent.path + '.' + key;
   } else {

@@ -4,7 +4,6 @@
  * @author Liang <liang@maichong.it>
  */
 
-/* global __DEBUG__ */
 /* eslint no-inner-declarations:0 no-inner-declarations:0 */
 
 'use strict';

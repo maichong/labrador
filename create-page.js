@@ -49,9 +49,13 @@ module.exports = function createPage(Component) {
 
   config.onLoad = function () {
     var me = this;
+    me.id = me.__route__;
     me.onLoad = function () {
     };
     me.props = {};
+    if (__DEBUG__) {
+      console.log('%c%s onLoad', 'color:#2a8f99', me.id);
+    }
     if (getter) {
       children = getter.call(me);
     }
@@ -61,8 +65,6 @@ module.exports = function createPage(Component) {
     });
 
     var setData = me.setData;
-
-    var setDataTimer = 0;
 
     /**
      * 设置模板数据
@@ -75,17 +77,15 @@ module.exports = function createPage(Component) {
         tmp[data] = value;
         data = tmp;
       }
-
-      var original = me.data;
-
-      me.data = Object.assign({}, original, data);
-      //console.log('Page#setData', original, '+', data, '->', newData);
-      if (!setDataTimer) {
-        setDataTimer = setTimeout(function () {
-          setDataTimer = 0;
-          setData.call(me, me.data);
-        }, 0);
+      if (__DEBUG__) {
+        let original = JSON.parse(JSON.stringify(this.data));
+        let append = JSON.parse(JSON.stringify(data));
+        setData.call(me, data);
+        console.log('%c%s setData(%o) : %o -> %o', 'color:#2a8f99', me.id, append, original, JSON.parse(JSON.stringify(this.data)));
+      } else {
+        setData.call(me, data);
       }
+
       if (!children) return;
       //需要用到更新的数据key列表
       var updatedKeys = [];
@@ -126,6 +126,9 @@ module.exports = function createPage(Component) {
           });
         }
         if (com.onUpdate) {
+          if (__DEBUG__) {
+            console.log('%c%s onUpdate(%o)', 'color:#2a8f99', com.id, JSON.parse(JSON.stringify(d)));
+          }
           com.onUpdate(d);
         }
         com.props = d;
@@ -159,6 +162,9 @@ module.exports = function createPage(Component) {
       Object.keys(children).forEach(function (key) {
         var component = children[key];
         if (component.onLoad) {
+          if (__DEBUG__) {
+            console.log('%c%s onLoad', 'color:#2a8f99', component.id);
+          }
           component.onLoad();
         }
 
@@ -175,10 +181,16 @@ module.exports = function createPage(Component) {
           Object.keys(children).forEach(function (k) {
             var component = children[k];
             if (component[name]) {
+              if (__DEBUG__) {
+                console.log('%c%s %s', 'color:#2a8f99', component.id, name);
+              }
               component[name].apply(component, arguments);
             }
           });
           if (func) {
+            if (__DEBUG__) {
+              console.log('%c%s %s', 'color:#2a8f99', me.id, name);
+            }
             func.apply(this, arguments);
           }
         };

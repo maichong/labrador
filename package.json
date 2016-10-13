@@ -9,8 +9,7 @@
     "wechat"
   ],
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/maichong/labrador.git"
@@ -24,5 +23,7 @@
   "bugs": {
     "url": "https://github.com/maichong/labrador/issues"
   },
-  "homepage": "https://github.com/maichong/labrador#readme"
+  "homepage": "https://github.com/maichong/labrador#readme",
+  "dependencies": {
+  }
 }
