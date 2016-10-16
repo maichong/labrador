@@ -122,7 +122,8 @@ console.log(wx.version);
 
 wx.app;         // 和全局的 getApp() 函数效果一样，代码风格不建议粗暴地访问全局对象和方法
 wx.Component;   // Labrador 自定义组件基类
-wx.PropTypes;       // Labrador 数据类型校验器集合
+wx.List;        // Labrador 自定义组件列表类
+wx.PropTypes;   // Labrador 数据类型校验器集合
 
 wx.login;       // 封装后的微信登录接口
 wx.getStorage;  // 封装后的读取缓存接口
@@ -238,8 +239,6 @@ Labrador的目标是构建一个可以重用、嵌套的自定义组件方案，
 
 另外，Labrador自定义组件的 `setData` 方法，支持两种传参方式，第一种像微信框架一样接受一个 `object` 类型的对象参数，第二种方式接受作为KV对的两个参数，`setData` 方法将自动将其转为 `object`。
 
-> **注意** 组件中事件响应方法必须以 `handle` 开头！例如上文中的 `handleTap`，否则子组件将无法与模板绑定。这样做也是为了代码风格统一，方便团队协作。建议事件响应方法命名采用 `handle + 组件名 + 事件名` 例如：`handleUsernameChange` `handleLoginButtonTap` ，这样我们很容易区分是模板上哪一个组件发生了什么事件，如果省略中间的名词，如 `handleTap` ，则代表当前整个自定义组件发生了 `tap` 事件。
-
 ##### 布局 `src/compontents/title/title.xml`
 
 ```xml 
@@ -248,7 +247,7 @@ Labrador的目标是构建一个可以重用、嵌套的自定义组件方案，
 </view>
 ```
 
-XML布局文件和微信WXML文件语法完全一致，只是扩充了一个自定义标签 `<component/>`，下文中详细叙述。
+XML布局文件和微信WXML文件语法完全一致，只是扩充了两个自定义标签 `<component/>` 和 `<list/>`，下文中详细叙述。
 
 ##### 样式 `src/compontents/title/title.less`
 
@@ -284,12 +283,21 @@ export default class Index extends wx.Component {
     count: 0
   };
 
-  get children() {
-    return {
-      list: new List(),
-      motto: new Title({ text: '@mottoTitle' }),
-      counter: new Counter({ count: '@count', onChange: this.handleCountChange })
-    };
+  children = {
+    list: new List(),
+    motto: new Title({ text: '@mottoTitle', hello: '@mottoTitle' }),
+    counter: new Counter({ count: '@count', onChange: '#handleCountChange' })
+  };
+
+  handleCountChange(count) {
+    this.setData({ count });
+  }
+
+  //事件处理函数
+  handleViewTap() {
+    wx.navigateTo({
+      url: '../logs/logs'
+    });
   }
 
   async onLoad() {
@@ -307,18 +315,8 @@ export default class Index extends wx.Component {
   onReady() {
     this.setData('mottoTitle', 'Labrador');
   }
-
-  handleCountChange(count) {
-    this.setData({ count });
-  }
-
-  //事件处理函数
-  handleViewTap() {
-    wx.navigateTo({
-      url: '../logs/logs'
-    });
-  }
 }
+
 ```
 
 页面代码的格式和自定义组件的格式一模一样，我们的思想是 **页面也是组件**。
@@ -327,7 +325,7 @@ js逻辑代码中同样使用 `export default` 语句导出了一个默认类，
 
 我们看到组件类中，有一个对象属性 `children` ，这个属性定义了该组件依赖、包含的其他自定义组件，在上面的代码中页面包含了三个自定义组件 `list` 、 `title` 和 `counter` ，这个三个自定义组件的 `key` 分别为 `list` 、 `motto` 和 `counter`。
 
-自定义组件类在实例化时接受一个类型为 `object` 的参数，这个参数就是父组件要传给子组件的props数据。一般情况下，父组件传递给子组件的props属性在其生命周期中是不变的，这是因为JS的语法和小程序框架的限制，没有React.js的JSX灵活。但是我们可以传递一个以 `@` 开头的属性值，这样我们就可以把子组建的 `props` 属性值绑定到父组件的 `data` 上来，当父组件的 `data` 发生变化后，Labrador将自动更新子组件的 `props`。例如上边代码中，将子组件 `motto` 的 `text` 属性绑定到了 `@mottoTitle`。那么在 `onReady` 方法中，将父组件的 `mottoTitle` 设置为 `Labrador`，那么子组件 `motto` 的 `text` 属性就会自动变为 `Labrador`。
+自定义组件类在实例化时接受一个类型为 `object` 的参数，这个参数就是父组件要传给子组件的props数据。一般情况下，父组件传递给子组件的props属性在其生命周期中是不变的，这是因为JS的语法和小程序框架的限制，没有React.js的JSX灵活。但是我们可以传递一个以 `@` 开头的属性值，这样我们就可以把子组建的 `props` 属性值绑定到父组件的 `data` 上来，当父组件的 `data` 发生变化后，Labrador将自动更新子组件的 `props`。例如上边代码中，将子组件 `motto` 的 `text` 属性绑定到了 `@mottoTitle`。那么在 `onReady` 方法中，将父组件的 `mottoTitle` 设置为 `Labrador`，那么子组件 `motto` 的 `text` 属性就会自动变为 `Labrador`。如果属性值以 `#` 开头，则将父组件的属性（非data的属性）直接绑定到子组件 `props`，如上边代码中的 `#handleCountChange`，会将父组件的 `handleCountChange` 方法绑定到子组件的 `props.onChange` 属性，这样子组件中可以通过调用 `this.props.onChange(newValue)` 来通知父组件数据变化。
 
 页面也是组件，所有的组件都拥有一样的生命周期函数onLoad, onReady, onShow, onHide, onUnload，onUpdate 以及setData函数。
 
@@ -374,6 +372,71 @@ Labrador支持多层组件嵌套，在上述的实例中，`index` 包含子组�
 
 详细代码请参阅 `labrador init` 命令生成的示例项目。
 
+
+## 自定义组件列表
+
+Labrador 0.5版本后支持循环调用自定义组件生成一个列表。
+
+##### 逻辑 `src/components/list/list.js`
+
+```js
+import wx from 'labrador';
+import Title from '../title/title';
+import Item from '../item/item';
+import { sleep } from '../../utils/util';
+
+export default class List extends wx.Component {
+
+  data = {
+    items: [
+      { title: 'Labrador' },
+      { title: 'Alaska' }
+    ]
+  };
+
+  children = {
+    title: new Title({ text: 'The List Title' }),
+    listItems: new wx.List(Item, 'items', {
+      title: '>title',
+      isNew: '>isNew',
+      onChange: '#handleChange'
+    })
+  };
+
+  async onLoad() {
+    await sleep(1000);
+    this.setData({
+      items: [{ title: 'Collie', isNew: true }].concat(this.data.items)
+    });
+  }
+
+  handleChange(component, title) {
+    let item = this.data.items[component.key];
+    item.title = title;
+    this.setData('items', this.data.items);
+  }
+}
+```
+
+在上边代码中的 `children.listItems` 子组件定义时，并没有直接实例化子组件类，而是实例化了一个 `labrador.List` 类，这个类是Labrador中专门用来管理组件列表。`labrador.List` 实例化时，接受三个参数：
+
+第一个参数是列表中的自定义组件类，请将原始类传入即可，不用实例化。
+
+第二个参数是父组件上 `data` 属性指向，指向的属性必须是一个数组，例如上述代码中，第二个参数为 `items` ，则当前父组件的 `data.items` 属性是一个数组，这个数组又多少个元素，那么子组件列表中就自动产生多少个子组件。子组件的数量跟随 `data.items` 数组动态变化，Labrador会自动实例化或销毁相应的子组件。销毁子组件时，子组件的 `onUnload()` 方法将会被调用。
+
+第三个参数是子组件 `props` 数据绑定设置，如果属性值以 `>` 开头，则将 `data.items` 中对应元素的属性绑定到子组件的 `props`。如果属性值以 `#` 开头，则将父组件的方法绑定到子组件的 `props` 中。注意，因为子组件是一个列表，所以为了区别，父组件对应的方法被调用时，第一个参数为子组件的实例，第二个及其之后的参数才是子组件中传回的参数。
+
+##### 模板 `src/components/list/list.xml`
+
+```xml
+<view class="list">
+  <component key="title" name="title"/>
+  <list key="listItems" name="item"/>
+</view>
+```
+
+在XML模板中，调用 `<list/>` 标签即可自动渲染子组件列表。和 `<component/>` 标签类似，`<list/>` 同样也有两个属性，`key` 和 `name`。Labrador编译后，会自动将 `<list/>` 标签编译成 `wx:for` 循环。
+
 ## 自动化测试
 
 我们规定项目中所有后缀为 `*.test.js` 的文件为测试脚本文件。每一个测试脚本文件对应一个待测试的JS模块文件。例如 `src/utils/util.js` 和 `src/utils/utils.test.js` 。这样，项目中所有模块和其测试文件就全部存放在一起，方便查找和模块划分。这样规划主要是受到了GO语言的启发，也符合微信小程序一贯的目录结构风格。
@@ -414,7 +477,7 @@ export function testAdd(exports) {
 
 第三类测试函数与生命周期测试函数类似，是以 `handle*` 开头，用以测试事件处理函数是否正确，是在对应事件发生时运行测试。例如：
 
-```
+```js
 // src/components/counter/counter.test.js
 
 export function handleTap(c, run) {
@@ -471,6 +534,12 @@ export function handleTap(c, run) {
 **labrador** 0.4.2
 - 修复组件setData方法优化性能产生的数据不同步问题
 - 在DEBUG模式下输出调试信息
+
+#### 2016-10-16
+**labrador** 0.5.0
+- 新增组件列表
+- 重构XML模板编译器
+- 编译时绑定事件改为事件发生时自动分派
 
 ## 贡献者
 

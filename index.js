@@ -11,6 +11,7 @@ labrador.default = labrador;
 
 labrador._createPage = require('./create-page');
 labrador.Component = require('./component');
+labrador.List = require('./list');
 labrador.PropTypes = labrador.Types = require('./prop-types');
 
 Object.defineProperty(labrador, 'app', {

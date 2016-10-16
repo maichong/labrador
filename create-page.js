@@ -6,26 +6,6 @@
 
 'use strict';
 
-function bindHandlers(page, children) {
-  Object.keys(children).forEach(function (key) {
-    if (!children.hasOwnProperty(key)) return;
-    var component = children[key];
-    Object.getOwnPropertyNames(component.constructor.prototype)
-      .concat(Object.getOwnPropertyNames(component))
-      .forEach(function (name) {
-        if (name.substr(0, 6) === 'handle') {
-          var refName = component.path.replace(/\./g, '_') + '_' + name;
-          page[refName] = function () {
-            component[name].apply(component, arguments);
-          };
-        }
-      });
-    if (component.children) {
-      bindHandlers(page, component.children);
-    }
-  });
-}
-
 module.exports = function createPage(Component) {
   var config = {};
 
@@ -46,6 +26,36 @@ module.exports = function createPage(Component) {
   if (!getter) {
     children = t.children;
   }
+
+  config._dispatch = function (event) {
+    var com = this;
+    var path = event.currentTarget.dataset.path || '';
+    var handler = event.currentTarget.dataset['bind' + event.type] || event.currentTarget.dataset['catch' + event.type];
+    while (path) {
+      var index = path.indexOf('.');
+      var key = '';
+      if (index === -1) {
+        key = path;
+        path = '';
+      } else {
+        key = path.substr(0, index);
+        path = path.substr(index + 1);
+      }
+      com = com.children[key];
+      if (!com) {
+        console.error('Can not resolve component by path ' + event.currentTarget.dataset.path);
+        return;
+      }
+    }
+    if (com[handler]) {
+      if (__DEBUG__) {
+        console.log('%c%s %s(%o)', 'color:#2a8f99', com.id, handler, event);
+      }
+      com[handler](event);
+    } else {
+      console.error('Can not resolve event handle ' + event.currentTarget.dataset.path + '#' + handler);
+    }
+  };
 
   config.onLoad = function () {
     var me = this;
@@ -78,10 +88,16 @@ module.exports = function createPage(Component) {
         data = tmp;
       }
       if (__DEBUG__) {
-        let original = JSON.parse(JSON.stringify(this.data));
-        let append = JSON.parse(JSON.stringify(data));
+        var original = JSON.parse(JSON.stringify(this.data));
+        var append = JSON.parse(JSON.stringify(data));
         setData.call(me, data);
-        console.log('%c%s setData(%o) : %o -> %o', 'color:#2a8f99', me.id, append, original, JSON.parse(JSON.stringify(this.data)));
+        var changed = JSON.stringify(original) !== JSON.stringify(this.data);
+        console.log('%c%s setData(%o) : %o -> %o %s',
+          'color:#' + (changed ? '2a8f99' : 'bbb'),
+          me.id, append, original,
+          JSON.parse(JSON.stringify(this.data)),
+          changed ? '' : 'Unchanged'
+        );
       } else {
         setData.call(me, data);
       }
@@ -150,9 +166,6 @@ module.exports = function createPage(Component) {
         component._init(key, me);
         data[key] = component.data;
       });
-
-      //递归绑定子控件事件方法
-      bindHandlers(me, children);
 
       this.setData(data);
 

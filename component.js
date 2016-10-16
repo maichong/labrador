@@ -10,8 +10,10 @@
  * 组件类
  * @class Component
  * @param {object} [props] 组件props初始数据
+ * @param {boolean} [inList] 是否是list列表中的项目
  */
-function Component(props) {
+function Component(props, inList) {
+  this._inList = !!inList;
   this._props = props || {};
   this._refs = {};
   if (!this.props) {
@@ -33,11 +35,16 @@ Component.prototype.setData = function setData(data, value) {
   }
 
   if (__DEBUG__) {
-    let original = JSON.parse(JSON.stringify(this.data));
-    let append = JSON.parse(JSON.stringify(data));
+    var original = JSON.parse(JSON.stringify(this.data));
+    var append = JSON.parse(JSON.stringify(data));
     this.data = Object.assign({}, this.data, data);
-    //console.log(me.id, 'setData(', append, ') :', original, '->', JSON.parse(JSON.stringify(this.data)));
-    console.log('%c%s setData(%o) : %o -> %o', 'color:#2a8f99', me.id, append, original, JSON.parse(JSON.stringify(this.data)));
+    var changed = JSON.stringify(original) !== JSON.stringify(this.data);
+    console.log('%c%s setData(%o) : %o -> %o %s',
+      'color:#' + (changed ? '2a8f99' : 'bbb'),
+      me.id, append, original,
+      JSON.parse(JSON.stringify(this.data)),
+      changed ? '' : 'Unchanged'
+    );
   } else {
     this.data = Object.assign({}, this.data, data);
   }
@@ -53,14 +60,14 @@ Component.prototype.setData = function setData(data, value) {
     }
   });
   if (!updatedKeys.length) return;
-
   var datas = {};
   updatedKeys.forEach(function (k) {
-    me._refs[k].forEach(function (com) {
+    me._refs[k].forEach(function (arr) {
+      var com = arr[1];
       if (!datas[com.key]) {
         datas[com.key] = {};
       }
-      datas[com.key][k] = data[k];
+      datas[com.key][arr[0]] = data[k];
     });
   });
 
@@ -81,7 +88,9 @@ Component.prototype.setData = function setData(data, value) {
       });
     }
     if (com.onUpdate) {
-      console.log('%c%s onUpdate(%o)', 'color:#2a8f99', com.id, JSON.parse(JSON.stringify(d)));
+      if (__DEBUG__) {
+        console.log('%c%s onUpdate(%o)', 'color:#2a8f99', com.id, JSON.parse(JSON.stringify(d)));
+      }
       com.onUpdate(d);
     }
     com.props = d;
@@ -103,13 +112,7 @@ Component.prototype._registerRef = function (ref, prop, component) {
   this._refs[ref].push([prop, component]);
 };
 
-/**
- * 初始化组件
- * @private
- * @param {string} key
- * @param {Component} parent
- */
-Component.prototype._init = function (key, parent) {
+Component.prototype._setKey = function (key, parent) {
   var me = this;
   me.key = key;
   me.parent = parent;
@@ -120,6 +123,17 @@ Component.prototype._init = function (key, parent) {
     me.path = key;
   }
   me.name = me.constructor.name || me.path;
+};
+
+/**
+ * 初始化组件
+ * @private
+ * @param {string} key
+ * @param {Component} parent
+ */
+Component.prototype._init = function (key, parent) {
+  var me = this;
+  me._setKey(key, parent);
   //console.log(me.path + '#init', me);
   if (!me.data) {
     me.data = {};
@@ -138,11 +152,24 @@ Component.prototype._init = function (key, parent) {
     Object.keys(me._props).forEach(function (k) {
       var v = me._props[k];
       //console.log('k', '->', k, v);
-      if (typeof v === 'string' && v[0] === '@') {
+      if (typeof v === 'string') {
         var refKey = v.substr(1);
-        v = parent.data[refKey];
-        //console.log('refKey', refKey, v, parent.data);
-        parent._registerRef(refKey, k, me);
+        if (v[0] === '@') {
+          //绑定父组件的data
+          v = parent.data[refKey];
+          //console.log('refKey', refKey, v, parent.data);
+          parent._registerRef(refKey, k, me);
+        } else if (v[0] === '#') {
+          v = parent[refKey];
+          if (typeof parent[refKey] === 'function') {
+            v = function () {
+              //绑定父组件的方法
+              parent[refKey].apply(parent, arguments);
+            };
+          } else {
+            v = parent[refKey];
+          }
+        }
       }
       if (v !== undefined) {
         props[k] = v;
@@ -189,6 +216,7 @@ Component.prototype._init = function (key, parent) {
       });
     });
 
+    //强制更新一遍数据，以便自动检查子组件props引用
     me.setData(this.data);
 
     existFn.forEach(function (name) {
