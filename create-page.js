@@ -51,7 +51,7 @@ module.exports = function createPage(Component) {
       if (__DEBUG__) {
         console.log('%c%s %s(%o)', 'color:#2a8f99', com.id, handler, event);
       }
-      com[handler](event);
+      return com[handler](event);
     } else {
       console.error('Can not resolve event handle ' + event.currentTarget.dataset.path + '#' + handler);
     }
