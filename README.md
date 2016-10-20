@@ -93,7 +93,8 @@ demo                 # 项目根目录
     -c, --catch    在载入时自动catch所有JS脚本的错误
     -t, --test     运行测试脚本
     -d, --debug    DEBUG模式
-    -m, --minify   uglify压缩代码
+    -m, --minify   压缩代码
+    -f, --force    强制构建，不使用缓存
 ```
 
 #### labrador watch 监测文件变化
@@ -108,7 +109,6 @@ demo                 # 项目根目录
     -c, --catch    在载入时自动catch所有JS脚本的错误
     -t, --test     运行测试脚本
     -d, --debug    DEBUG模式
-    -m, --minify   uglify压缩代码
 ```
 
 ## labrador 库
@@ -397,6 +397,7 @@ export default class List extends wx.Component {
   children = {
     title: new Title({ text: 'The List Title' }),
     listItems: new wx.List(Item, 'items', {
+      item: '>>',
       title: '>title',
       isNew: '>isNew',
       onChange: '#handleChange'
@@ -424,7 +425,7 @@ export default class List extends wx.Component {
 
 第二个参数是父组件上 `data` 属性指向，指向的属性必须是一个数组，例如上述代码中，第二个参数为 `items` ，则当前父组件的 `data.items` 属性是一个数组，这个数组又多少个元素，那么子组件列表中就自动产生多少个子组件。子组件的数量跟随 `data.items` 数组动态变化，Labrador会自动实例化或销毁相应的子组件。销毁子组件时，子组件的 `onUnload()` 方法将会被调用。
 
-第三个参数是子组件 `props` 数据绑定设置，如果属性值以 `>` 开头，则将 `data.items` 中对应元素的属性绑定到子组件的 `props`。如果属性值以 `#` 开头，则将父组件的方法绑定到子组件的 `props` 中。注意，因为子组件是一个列表，所以为了区别，父组件对应的方法被调用时，第一个参数为子组件的实例，第二个及其之后的参数才是子组件中传回的参数。
+第三个参数是子组件 `props` 数据绑定设置，如果属性值以 `>` 开头，则将 `data.items` 中对应元素的属性绑定到子组件的 `props`。如果属性值以 `#` 开头，则将父组件的方法绑定到子组件的 `props` 中。注意，因为子组件是一个列表，所以为了区别，父组件对应的方法被调用时，第一个参数为子组件的实例，第二个及其之后的参数才是子组件中传回的参数。如果属性值是 `>>` 则将整个列表项数据绑定到对应的 `props` 上。
 
 ##### 模板 `src/components/list/list.xml`
 
@@ -508,6 +509,9 @@ export function handleTap(c, run) {
     "compress": {
       "warnings": false
     }
+  },
+  "classNames": {
+    "for-test":true
   }
 }
 ```
@@ -515,6 +519,8 @@ export function handleTap(c, run) {
 `npmMap` 属性为NPM包映射设置，例如 `{"underscore":"lodash"}` 配置，如果你的源码中有`require('underscore')` 那么编译后将成为 `require('lodash')`。这样做是为了解决小程序的环境限制导致一些NPM包无法使用的问题。比如我们的代码必须依赖于包A，A又依赖于B，如果B和小程序不兼容，将导致A也无法使用。在这总情况下，我们可以Fork一份B，起名为C，将C中与小程序不兼容的代码调整下，最后在项目配置文件中将B映射为C，那么在编译后就会绕过B而加载C，从而解决这个问题。
 
 `uglify` 属性为 UglifyJs2 的压缩配置，在编译时附加 `-m` 参数即可对项目中的所有文件进行压缩处理。
+
+`classNames` 属性指定了不压缩的WXSS类名，在压缩模式下，默认会将所有WXSS类名压缩为非常短的字符串，并抛弃所有WXML页面中未曾使用的样式类，如果指定了该配置项，则指定的类不会被压缩和抛弃。这个配置在动态类名的情况下非常实用，比如XML中`class="text-{{color}}"`，在编译LESS时，无法确定LESS中的`.text-red`类是否被用到，所以需要配置此项强制保留`text-red`类。
 
 ## ChangeLog
 

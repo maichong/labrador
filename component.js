@@ -39,10 +39,11 @@ Component.prototype.setData = function setData(data, value) {
     var append = JSON.parse(JSON.stringify(data));
     this.data = Object.assign({}, this.data, data);
     var changed = JSON.stringify(original) !== JSON.stringify(this.data);
-    console.log('%c%s setData(%o) : %o -> %o %s',
+    console.log('%c%s setData(%o) : %o -> %o Component:%o %s',
       'color:#' + (changed ? '2a8f99' : 'bbb'),
       me.id, append, original,
       JSON.parse(JSON.stringify(this.data)),
+      me,
       changed ? '' : 'Unchanged'
     );
   } else {

@@ -61,7 +61,13 @@ List.prototype._createItem = function (key, item) {
     var value = this.map[k];
     if (typeof value === 'string') {
       var refKey = value.substr(1);
-      if (value[0] === '>') {
+      if (value === '>>') {
+        value = item;
+        if (!me._refs['>']) {
+          me._refs['>'] = [];
+        }
+        me._refs['>'].push(k);
+      } else if (value[0] === '>') {
         value = item[refKey];
         me._refs[refKey] = k;
       } else if (value[0] === '#') {
@@ -105,7 +111,7 @@ List.prototype.onUpdate = function (props) {
     var child = findChildForItem(item);
     if (!child) {
       child = this._createItem(i, item);
-    } else if (child.onUpdate) {
+    } else {
       var newProps = {};
       for (var refKey in this._refs) {
         /**
@@ -113,6 +119,12 @@ List.prototype.onUpdate = function (props) {
          * k 为子控件props对应的key
          */
         var k = this._refs[refKey];
+        if (refKey === '>') {
+          k.forEach(function (kk) {
+            newProps[kk] = item;
+          });
+          continue;
+        }
         if (item[refKey] !== child.props[k]) {
           newProps[k] = item[refKey];
         }
@@ -122,7 +134,10 @@ List.prototype.onUpdate = function (props) {
         if (__DEBUG__) {
           console.log('%c%s onUpdate(%o)', 'color:#2a8f99', child.id, JSON.parse(JSON.stringify(newProps)));
         }
-        child.onUpdate(newProps);
+        if (child.onUpdate) {
+          child.onUpdate(newProps);
+        }
+        child.props = newProps;
       }
     }
     if (i != child.key) {
