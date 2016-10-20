@@ -57,8 +57,8 @@ List.prototype._createItem = function (key, item) {
   if (__DEBUG__) {
     console.log('%c%s create item key: %s item: %o', 'color:#2a8f99', me.id, key, JSON.parse(JSON.stringify(item)));
   }
-  for (var k in this.map) {
-    var value = this.map[k];
+  Object.keys(this.map).forEach(function (k) {
+    var value = me.map[k];
     if (typeof value === 'string') {
       var refKey = value.substr(1);
       if (value === '>>') {
@@ -80,7 +80,7 @@ List.prototype._createItem = function (key, item) {
       }
     }
     props[k] = value;
-  }
+  });
   props._item = item;
   component = new me.Component(props, true);
   component._init(key, me);
