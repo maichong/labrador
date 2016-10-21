@@ -20,21 +20,37 @@ Object.defineProperty(labrador, 'app', {
   }
 });
 
-var noPromise = {
-  some: true
+var noPromiseMethods = {
+  stopRecord: true,
+  pauseVoice: true,
+  stopVoice: true,
+  pauseBackgroundAudio: true,
+  stopBackgroundAudio: true,
+  showNavigationBarLoading: true,
+  hideNavigationBarLoading: true,
+  createAnimation: true,
+  createContext: true,
+  hideKeyboard: true,
+  stopPullDownRefresh: true
 };
 
 function forEach(key) {
-  if (noPromise[key] || key.substr(0, 2) === 'on' || /\w+Sync$/.test(key)) {
-    if (wx.__lookupGetter__(key)) {
-      Object.defineProperty(labrador, key, {
-        get: function () {
-          return wx[key];
+  if (noPromiseMethods[key] || key.substr(0, 2) === 'on' || /\w+Sync$/.test(key)) {
+    labrador[key] = function () {
+      if (__DEBUG__) {
+        var res = wx[key].apply(wx, arguments);
+        if (!res) {
+          res = {};
         }
-      });
-    } else {
-      labrador[key] = wx;
-    }
+        if (res && typeof res === 'object') {
+          res.then = function () {
+            console.warn('wx.' + key + ' is not a async function, you should not use await ');
+          };
+        }
+        return res;
+      }
+      return wx[key].apply(wx, arguments);
+    };
     return;
   }
 
