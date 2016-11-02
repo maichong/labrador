@@ -74,7 +74,7 @@ Component.prototype.setData = function setData(data, value) {
 
   Object.keys(datas).forEach(function (k) {
     var com = children[k];
-    var d = datas[k];
+    var d = Object.assign({}, com.props, datas[k]);
     if (__DEBUG__ && com.propTypes) {
       Object.keys(datas[k]).forEach(function (propName) {
         var validator = com.propTypes[propName];
