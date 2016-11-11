@@ -6,21 +6,11 @@
 
 'use strict';
 
-var labrador = module.exports = {};
-labrador.default = labrador;
+import Component from './component';
+import PropTypes from './prop-types';
+import _createPage from './create-page';
 
-labrador._createPage = require('./create-page');
-labrador.Component = require('./component');
-labrador.List = require('./list');
-labrador.PropTypes = labrador.Types = require('./prop-types');
-
-Object.defineProperty(labrador, 'app', {
-  get: function () {
-    return getApp();
-  }
-});
-
-var noPromiseMethods = {
+const noPromiseMethods = {
   stopRecord: true,
   pauseVoice: true,
   stopVoice: true,
@@ -34,11 +24,18 @@ var noPromiseMethods = {
   stopPullDownRefresh: true
 };
 
+const labrador = {
+  wx,
+  get app() {
+    return getApp();
+  }
+};
+
 function forEach(key) {
   if (noPromiseMethods[key] || key.substr(0, 2) === 'on' || /\w+Sync$/.test(key)) {
     labrador[key] = function () {
-      if (__DEBUG__) {
-        var res = wx[key].apply(wx, arguments);
+      if (__DEV__) {
+        let res = wx[key].apply(wx, arguments);
         if (!res) {
           res = {};
         }
@@ -71,3 +68,6 @@ function forEach(key) {
 }
 
 Object.keys(wx).forEach(forEach);
+
+export default labrador;
+export { Component, PropTypes, _createPage };

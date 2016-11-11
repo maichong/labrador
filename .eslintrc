@@ -6,10 +6,14 @@
   "globals": {
     "wx": true,
     "getApp": true,
-    "__DEBUG__": true
+    "__DEV__": true
   },
   "parser": "babel-eslint",
+  "plugins": ["flowtype", "flowtype-errors"],
   "rules": {
+    "flowtype/define-flow-type": 1,
+    "flowtype/use-flow-type": 1,
+    "flowtype-errors/show-errors": 2,
     "prefer-const": 0,
     "prefer-template": 0,
     "no-param-reassign": 0,
@@ -27,7 +31,6 @@
     "prefer-arrow-callback": 0,
     "prefer-rest-params": 0,
     "prefer-spread": 0,
-    "no-var": 0,
     "vars-on-top": 0
   }
 }
