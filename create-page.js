@@ -9,17 +9,39 @@
 'use strict';
 
 import _set from 'lodash/set';
+import _get from 'lodash/get';
 import Component from './component';
+//import * as utils from './utils';
 
-module.exports = function createPage(ComponentClass: Class<$Page>) {
+/**
+ * 构建列表数据项
+ * @param list   原始列表
+ * @param item   新列表
+ * @returns {{_: *}}
+ */
+function buildListItem(list: Array<$DataMap>, item: $DataMap): $DataMap {
+  let res = { _: item };
+  if (list && list.length && item.__k !== undefined) {
+    for (let t of list) {
+      if (t._ && t._.__k === item.__k) {
+        return Object.assign({}, t, res);
+      }
+    }
+  }
+  return res;
+}
+
+module.exports = function createPage(ComponentClass: Class<Component>) {
   let config = {};
   let root: Component;
+  let page: $Page;
 
   config.data = {};
   config.name = '';
 
   config._dispatch = function (event: $Event): ?string {
-    let com = this;
+    console.log('%cdispatch: %s %s %o', 'color:#2abb40', event.type, event.currentTarget.dataset.path, event);
+    let com: Component = root;
     let path = event.currentTarget.dataset.path || '';
     let handler = event.currentTarget.dataset['bind' + event.type] || event.currentTarget.dataset['catch' + event.type];
     while (path) {
@@ -32,7 +54,11 @@ module.exports = function createPage(ComponentClass: Class<$Page>) {
         key = path.substr(0, index);
         path = path.substr(index + 1);
       }
-      com = com._children[key];
+      if (Array.isArray(com)) {
+        com = com[key];
+      } else {
+        com = com._children[key];
+      }
       if (!com) {
         console.error('Can not resolve component by path ' + event.currentTarget.dataset.path);
         return undefined;
@@ -57,41 +83,52 @@ module.exports = function createPage(ComponentClass: Class<$Page>) {
     };
   });
 
-  config.updateData = function (path: string, state: $DataMap) {
-    if (!path) {
-      this.setData({ _: state });
-    } else {
-      path += '._';
-      let data = this.data;
-      _set(data, path.split('.'), state);
-      this.setData(data);
-    }
-  };
-
   config.onLoad = function () {
-    let me: $Page = this;
+    page = this;
+    page.page = page;
 
-    root = new ComponentClass();
-    root.page = me;
-    me.__proto__.__proto__ = root;
-    Object.keys(root).forEach((name) => {
-      // $FlowFixMe 安全访问证明周期函数
-      me[name] = root[name];
-    });
+    page.updateData = function (path: string, state: $DataMap | Array<$DataMap>) {
+      //console.log('updateData', path, state);
+      if (!path) {
+        page.setData({ _: state });
+      } else {
+        let data = page.data;
+        if (Array.isArray(state)) {
+          let list = _get(data, path); //原有data中列表数据
+          let newList = state.map((item) => buildListItem(list, item));
+          _set(data, path, newList);
+        } else {
+          path += '._';
+          _set(data, path.split('.'), state);
+        }
+        page.setData(data);
+        //console.log(utils.getDebugObject(page.data));
+      }
+    };
 
-    me.id = me.__route__;
-    me.page = me;
-    me.props = {};
-    me._init('', me);
+
+    page.root = root = new ComponentClass({});
+    root._config = {};
+
+    root.page = page;
+
+
+    root.id = page.__route__;
+    root.page = page;
+    try {
+      root._init('');
+    } catch (error) {
+      console.error(error.stack);
+    }
     if (root.onLoad) {
-      root.onLoad.call(me);
+      root.onLoad();
     }
   };
 
   config.onReady = function () {
     this._ready = true;
     if (root.onReady) {
-      return root.onReady.apply(root.page, arguments);
+      return root.onReady.apply(root, arguments);
     }
   };
 

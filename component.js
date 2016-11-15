@@ -17,6 +17,7 @@ import * as utils from './utils';
 export default class Component {
   static propTypes: {[key: string]:$PropValidator};
 
+  _inited: boolean;
   _boundAllLifecycle: boolean;
   _bound: Object;
   _listIndex: number | void;
@@ -55,7 +56,9 @@ export default class Component {
    * @param {object|string} nextState
    */
   setState(nextState: $DataMap): void {
-    console.log('setState', this);
+    if (!this._inited) {
+      console.error(this.id + ' 组件未自动初始化之前请勿调用setState()');
+    }
     if (!utils.shouldUpdate(this.state, nextState)) {
       //如果没有发生变化，则忽略更新，优化性能
       if (__DEV__) {
@@ -86,17 +89,27 @@ export default class Component {
     }
 
     this.page.updateData(this.path, this.state);
-    this._updateChildren();
+    let children = this._updateChildren();
+
+    //如果当前组件已经初始化，则检查子组件是否初始化
+    Object.keys(children).forEach((k) => {
+      let component: $Child = children[k];
+      if (Array.isArray(component)) {
+        component.forEach((item, index) => item._init(k, this, index, item._config.key));
+      } else {
+        component._init(k, this);
+      }
+    });
   }
 
   /**
    * @param {string} key         组件key
-   * @param {Component} parent   父组件
+   * @param {Component} [parent] 父组件
    * @param {number} [listIndex] 组件在列表中的index
    * @param {number} [listKey]   组件在列表中的key定义
    * @private
    */
-  _setKey(key: string, parent: Component, listIndex?: number, listKey?: string): void {
+  _setKey(key: string, parent?: Component, listIndex?: number, listKey?: string): void {
     this.key = key;
     this._listIndex = listIndex;
     this._listKey = listKey;
@@ -112,6 +125,7 @@ export default class Component {
     }
     if (typeof listIndex === 'number') {
       this.path += '.' + listIndex;
+      this.id += '.' + listIndex;
     }
     this.name = this.constructor.name || this.path;
   }
@@ -120,17 +134,25 @@ export default class Component {
    * 初始化组件
    * @private
    * @param {string} key         组件key
-   * @param {Component} parent   父组件
+   * @param {Component} [parent] 父组件
    * @param {number} [listIndex] 组件在列表中的index
    * @param {number} [listKey]   组件在列表中的key定义
    */
-  _init(key: string, parent: Component, listIndex?: number, listKey?: string): void {
+  _init(key: string, parent?: Component, listIndex?: number, listKey?: string): void {
+    if (this._inited) return;
     this._setKey(key, parent, listIndex, listKey);
-    console.log(this.path + '#init', this);
+    //console.log(this.path + '#init', this);
     if (!this.state) {
       this.state = {};
     }
-    this.state.__k = listKey || listIndex;
+    let __k = listKey || listIndex;
+    if (__k !== undefined) {
+      if (this.state.asMutable) {
+        this.state = this.state.set('__k', __k);
+      } else {
+        this.state.__k = __k;
+      }
+    }
     this._children = {};
 
     if (__DEV__) {
@@ -147,6 +169,7 @@ export default class Component {
     }
 
     this.page.updateData(this.path, this.state);
+    this._inited = true;
   }
 
   /**
@@ -181,12 +204,15 @@ export default class Component {
     let children = this._children || {};
     let configs = this.children && this.children();
     if (configs) {
+      if (__DEV__) {
+        console.log('%c%s %s -> %o', 'color:#9a23cc', this.id, 'children()', configs);
+      }
       Object.keys(configs).forEach((key) => {
         let config: $ChildConfig | Array<$ChildConfig> = configs[key];
         if (Array.isArray(config)) {
           let map = {};
           let used = [];
-          let list: $Child = children[key];
+          let list: Array<Component> = children[key];
           if (list && Array.isArray(list)) {
             list.forEach((item) => {
               if (item._listKey) {
@@ -194,7 +220,8 @@ export default class Component {
               }
             });
           }
-          children[key] = config.map((c: $ChildConfig) => {
+          list = [];
+          config.forEach((c: $ChildConfig) => {
             if (__DEV__ && !c.key) {
               console.warn(`"${this.name}"的子组件"${key}"列表项必须包含"key"属性定义`);
             }
@@ -207,11 +234,12 @@ export default class Component {
                 console.warn(`"${this.name}"的子组件"${key}"列表项必须"key"属性定义发现重复值："${childKey}"`);
               }
             }
-            return this._updateChild(com, c);
+            list.push(this._updateChild(com, c));
           });
+          children[key] = list;
+          this.page.updateData(this.path + '.' + key, list.map(com => com.state));
         } else {
-          //原来的
-          let component: $Child = children[key];
+          let component: $Child = children[key]; //原来的组件
           if (!Array.isArray(component)) { //我们知道此处original不会为数组，但flow不知道
             children[key] = this._updateChild(component, config);
           }
@@ -230,7 +258,6 @@ export default class Component {
    * @private
    */
   _updateChild(component?: Component, config: $ChildConfig): Component {
-    console.log('_updateChild', component, config);
     if (component) {
       //找到了原有实例，更新props
       if (config.props && utils.shouldUpdate(component.props, config.props)) {
@@ -279,7 +306,7 @@ export default class Component {
     let hasEmpayArray = false;
 
     childrenKeys.forEach((k) => {
-      let component: Component|Array<Component> = children[k];
+      let component: $Child = children[k];
       if (Array.isArray(component)) {
         if (!component.length) {
           hasEmpayArray = true;
@@ -317,7 +344,7 @@ export default class Component {
       // $FlowFixMe 安全访问证明周期函数
       this[name] = function (...args) {
         Object.keys(this._children).forEach((k) => {
-          let component: Component|Array<Component> = this._children[k];
+          let component: $Child = this._children[k];
           if (Array.isArray(component)) {
             component.forEach((com) => {
               // $FlowFixMe 安全访问证明周期函数

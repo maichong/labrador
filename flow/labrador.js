@@ -57,8 +57,12 @@ declare type $Child = Component | Array<Component>;
 
 declare type $Children = {[key: string]: Component | Array<Component>};
 
-declare interface $Page extends Component {
+declare interface $Page {
   __route__: string;
-  _read:true,
+  _ready: true;
+  root: Component;
+  page: $Page;
+  data: $DataMap;
+  setData($DataMap):void;
   updateData(path: string, state: $DataMap):void;
 }
