@@ -20,8 +20,9 @@ export default class Component {
   _boundAllLifecycle: boolean;
   _bound: Object;
   _listIndex: number | void;
+  _listKey: string | void;
   _children: $Children;
-  _refs: {[key: string]: Array<{prop: string, component: Component}>};
+  _config: {};
 
   id: string;
   key: string;
@@ -47,7 +48,6 @@ export default class Component {
   constructor(props?: $DataMap) {
     this.props = props || {};
     this._bound = {};
-    this._refs = {};
   }
 
   /**
@@ -55,6 +55,7 @@ export default class Component {
    * @param {object|string} nextState
    */
   setState(nextState: $DataMap): void {
+    console.log('setState', this);
     if (!utils.shouldUpdate(this.state, nextState)) {
       //如果没有发生变化，则忽略更新，优化性能
       if (__DEV__) {
@@ -86,82 +87,19 @@ export default class Component {
 
     this.page.updateData(this.path, this.state);
     this._updateChildren();
-
-    //this.parent.setState({ [this.key]: this.state });
-    //
-    // let children: $ChildrenConfig = this._children;
-    // if (!children) return;
-    // let updatedKeys: Array<string> = [];
-    // Object.keys(nextState).forEach(function (k) {
-    //   if (this._refs[k]) {
-    //     updatedKeys.push(k);
-    //   }
-    // });
-    // if (!updatedKeys.length) return;
-    //
-    // const datas: {[com: string]: $DataMap} = {};
-    //
-    // updatedKeys.forEach(function (k: string) {
-    //   this._refs[k].forEach(function (obj) {
-    //     let com = obj.component;
-    //     if (!datas[com.key]) {
-    //       datas[com.key] = {};
-    //     }
-    //     datas[com.key][obj.prop] = nextState[k];
-    //   });
-    // });
-    //
-    // Object.keys(datas).forEach(function (k) {
-    //   let com: Component = children[k];
-    //   let d = Object.assign({}, com.props, datas[k]);
-    //   if (__DEV__ && com.constructor.propTypes) {
-    //     Object.keys(datas[k]).forEach(function (propName) {
-    //       let validator = com.constructor.propTypes[propName];
-    //       if (typeof validator !== 'function') {
-    //         console.warn('组件"' + com.name + '"的"' + propName + '"属性类型检测器不是一个有效函数');
-    //         return;
-    //       }
-    //       let error = validator(d, propName, com.name);
-    //       if (error) {
-    //         console.warn(error.message);
-    //       }
-    //     });
-    //   }
-    //   if (com.onUpdate) {
-    //     if (__DEV__) {
-    //       console.log('%c%s onUpdate(%o)', 'color:#2a8f99', com.id, utils.getDebugObject(d));
-    //     }
-    //     com.onUpdate(d);
-    //   }
-    //   com.props = d;
-    // });
-  }
-
-
-  /**
-   * 注册引用
-   * @private
-   * @param {string} ref
-   * @param {string} prop
-   * @param {Component} component
-   * @private
-   */
-  _registerRef(ref: string, prop: string, component: Component): void {
-    if (!this._refs[ref]) {
-      this._refs[ref] = [];
-    }
-    this._refs[ref].push({ prop, component });
   }
 
   /**
-   * @param key
-   * @param parent
-   * @param listIndex
+   * @param {string} key         组件key
+   * @param {Component} parent   父组件
+   * @param {number} [listIndex] 组件在列表中的index
+   * @param {number} [listKey]   组件在列表中的key定义
    * @private
    */
-  _setKey(key: string, parent: Component, listIndex: number | void): void {
+  _setKey(key: string, parent: Component, listIndex?: number, listKey?: string): void {
     this.key = key;
     this._listIndex = listIndex;
+    this._listKey = listKey;
     if (parent) {
       this.page = parent.page;
       this.id = parent.id + ':' + key;
@@ -172,22 +110,27 @@ export default class Component {
     } else {
       this.path = key;
     }
+    if (typeof listIndex === 'number') {
+      this.path += '.' + listIndex;
+    }
     this.name = this.constructor.name || this.path;
   }
 
   /**
    * 初始化组件
    * @private
-   * @param {string} key
-   * @param {Component} [parent]
-   * @param {number} [listIndex]
+   * @param {string} key         组件key
+   * @param {Component} parent   父组件
+   * @param {number} [listIndex] 组件在列表中的index
+   * @param {number} [listKey]   组件在列表中的key定义
    */
-  _init(key: string, parent: Component, listIndex: number | void): void {
-    this._setKey(key, parent, listIndex);
-    //console.log(me.path + '#init', me);
+  _init(key: string, parent: Component, listIndex?: number, listKey?: string): void {
+    this._setKey(key, parent, listIndex, listKey);
+    console.log(this.path + '#init', this);
     if (!this.state) {
       this.state = {};
     }
+    this.state.__k = listKey || listIndex;
     this._children = {};
 
     if (__DEV__) {
@@ -287,6 +230,7 @@ export default class Component {
    * @private
    */
   _updateChild(component?: Component, config: $ChildConfig): Component {
+    console.log('_updateChild', component, config);
     if (component) {
       //找到了原有实例，更新props
       if (config.props && utils.shouldUpdate(component.props, config.props)) {
@@ -299,6 +243,7 @@ export default class Component {
       //没有找到原有实例，实例化一个新的
       let ComponentClass = config.component;
       component = new ComponentClass(config.props);
+      component._config = config;
     }
     return component;
   }
@@ -320,6 +265,10 @@ export default class Component {
     let existFn: Array<string> = [];
     let allFn = ['onReady', 'onRouteEnd', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'];
 
+    if (!this._bound) {
+      this._bound = {};
+    }
+
     allFn.forEach((name) => {
       // $FlowFixMe 安全访问证明周期函数
       if (this[name] && !this._bound[name]) {
@@ -337,7 +286,7 @@ export default class Component {
         }
         //组件列表
         component.forEach((item, index) => {
-          item._init(k, this, index);
+          item._init(k, this, index, item._config.key);
           allFn.forEach((name) => {
             // $FlowFixMe 安全访问证明周期函数
             if (existFn.indexOf(name) === -1 && item[name]) {

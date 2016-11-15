@@ -8,6 +8,7 @@
 
 'use strict';
 
+import _set from 'lodash/set';
 import Component from './component';
 
 module.exports = function createPage(ComponentClass: Class<$Page>) {
@@ -56,13 +57,14 @@ module.exports = function createPage(ComponentClass: Class<$Page>) {
     };
   });
 
-  config.updateData = function (path: string, state: $DataMap, listIndex?: number) {
-    console.log(path, state);
+  config.updateData = function (path: string, state: $DataMap) {
     if (!path) {
-      this.setData(state);
+      this.setData({ _: state });
     } else {
-      path = '_' + path.replace(/\./g, '_');
-      this.setData({ [path]: state });
+      path += '._';
+      let data = this.data;
+      _set(data, path.split('.'), state);
+      this.setData(data);
     }
   };
 

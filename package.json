@@ -25,5 +25,6 @@
   },
   "homepage": "https://github.com/maichong/labrador#readme",
   "dependencies": {
+    "lodash": "^4.17.1"
   }
 }
