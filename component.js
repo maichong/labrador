@@ -261,10 +261,16 @@ export default class Component {
     if (component) {
       //找到了原有实例，更新props
       if (config.props && utils.shouldUpdate(component.props, config.props)) {
-        if (component.onUpdate) {
-          component.onUpdate(config.props);
+        let nextProps;
+        if (component.props && component.props.merge) {
+          nextProps = component.props.merge(config.props);
+        } else {
+          nextProps = Object.assign({}, component.props, config.props);
         }
-        component.props = config.props;
+        if (component.onUpdate) {
+          component.onUpdate(nextProps);
+        }
+        component.props = nextProps;
       }
     } else {
       //没有找到原有实例，实例化一个新的
