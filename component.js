@@ -242,6 +242,7 @@ export default class Component {
           let component: $Child = children[key]; //原来的组件
           if (!Array.isArray(component)) { //我们知道此处original不会为数组，但flow不知道
             children[key] = this._updateChild(component, config);
+            component && this.page.updateData(component.path, component.state);
           }
         }
       });
