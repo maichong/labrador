@@ -45,9 +45,14 @@ export default class Component {
   parent: Component | void;
   // 组件所属page对象
   page: $Page;
-  _setStateCallbacks: Array<Function>;
+  // setState计时器
   _setStateTimer: number;
+  // setState回调函数队列
+  _setStateCallbacks: Array<Function>;
+  // setState变更列表
   _setStateQueue: Array<$DataMap>;
+  // 延迟更新计时器
+  _updateTimer: number;
 
   onLoad: Function;
   onReady: Function;
@@ -128,11 +133,7 @@ export default class Component {
 
       if (!stateChanged) return;
 
-      // 内部state数据更新后，自动更新页面数据
-      this.page.updateData(this.path, state);
-
-      // 更新子组件列表
-      this._updateChildren(true);
+      this._update();
     });
   }
 
@@ -192,7 +193,7 @@ export default class Component {
     this.page.updateData(this.path, this.state);
     this._inited = true;
 
-    this._updateChildren(true);
+    this._updateChildren();
   }
 
   /**
@@ -222,6 +223,23 @@ export default class Component {
       this.id += '.' + listIndex;
     }
     this.name = this.constructor.name || this.path;
+  }
+
+  /**
+   * 更新组件
+   * @private
+   */
+  _update() {
+    if (this._updateTimer) return;
+    this._updateTimer = setTimeout(() => {
+      this._updateTimer = 0;
+
+      // 内部state数据更新后，自动更新页面数据
+      this.page.updateData(this.path, this.state);
+
+      // 更新子组件列表
+      this._updateChildren();
+    });
   }
 
   /**
@@ -298,12 +316,7 @@ export default class Component {
 
           // 销毁没有用处的子组件
           Object.keys(map).forEach((k) => {
-            if (map[k].onUnload) {
-              if (__DEV__) {
-                console.log('%c%s onUnload()', 'color:#9a23cc', map[k].id);
-              }
-              map[k].onUnload();
-            }
+            utils.callLifecycle(map[k], 'onUnload');
           });
           children[key] = list;
           // 子组件列表更新后，统一更新列表对应的页面数据
