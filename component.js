@@ -11,27 +11,43 @@
 import * as utils from './utils';
 
 /**
- * 组件类
+ * Labrador组件基类
  * @class Component
  */
 export default class Component {
+  // 组件props类型定义，必须为static
   static propTypes: {[key: string]:$PropValidator};
 
+  // 组件是否已经初始化
   _inited: boolean;
-  _boundAllLifecycle: boolean;
+  // 组件已经绑定的生命周期函数map
   _bound: Object;
+  // 组件是否已经绑定所有的生命周期函数
+  _boundAllLifecycle: boolean;
+  // 当前组件在列表中的索引，如果为undefined代表当前组件不在列表中
   _listIndex: number | void;
+  // 当前组件在列表中的唯一key，即children()方法返回的配置项key属性，如果为undefined代表当前组件不在列表中
   _listKey: string | void;
+  // 当前组件的所有子组件KV对
   _children: $Children;
+  // 组件实例化时的参数
   _config: {};
 
+  // 组件ID
   id: string;
+  // 组件key，
   key: string;
+  // 组件key，不等同于_listKey
   name: string;
+  // 组件路径
   path: string;
+  // 组件props
   props: $DataMap;
+  // 组件内部state
   state: $DataMap;
-  parent: Component;
+  // 父组件
+  parent: Component | void;
+  // 组件所属page对象
   page: $Page;
 
   onLoad: Function;
@@ -57,10 +73,10 @@ export default class Component {
    */
   setState(nextState: $DataMap): void {
     if (!this._inited) {
-      console.error(this.id + ' 组件未自动初始化之前请勿调用setState()');
+      console.error(this.id + ' 组件未自动初始化之前请勿调用setState()，如果在组件构造函数中请直接使用"this.state={}"赋值语法');
     }
     if (!utils.shouldUpdate(this.state, nextState)) {
-      //如果没有发生变化，则忽略更新，优化性能
+      // 如果没有发生变化，则忽略更新，优化性能
       if (__DEV__) {
         console.log('%c%s setState(%o) ignored',
           'color:#fcc',
@@ -72,7 +88,7 @@ export default class Component {
     }
 
     if (__DEV__) {
-      //Development 环境打印state变化
+      // Development 环境打印state变化
       let original = utils.getDebugObject(this.state);
       let append = utils.getDebugObject(nextState);
       this.state = Object.assign({}, this.state, nextState);
@@ -88,10 +104,13 @@ export default class Component {
       this.state = Object.assign({}, this.state, nextState);
     }
 
+    // 内部state数据更新后，自动更新页面数据
     this.page.updateData(this.path, this.state);
+    // 更新子组件列表
     let children = this._updateChildren();
 
-    //如果当前组件已经初始化，则检查子组件是否初始化
+    // 则检查子组件是否初始化
+    // 因为state变化后，children()方法有可能返回了动态更改过的子组件列表
     Object.keys(children).forEach((k) => {
       let component: $Child = children[k];
       if (Array.isArray(component)) {
@@ -103,6 +122,56 @@ export default class Component {
   }
 
   /**
+   * 初始化组件
+   * @private
+   * @param {string} key         组件key
+   * @param {Component} [parent] 父组件
+   * @param {number} [listIndex] 组件在列表中的index
+   * @param {number} [listKey]   组件在列表中的key定义
+   */
+  _init(key: string, parent?: Component, listIndex?: number, listKey?: string): void {
+    if (this._inited) return;
+    this._setKey(key, parent, listIndex, listKey);
+    // console.log(this.path + '#init', this);
+    if (!this.state) {
+      this.state = {};
+    }
+    let __k = listKey || listIndex;
+    if (__k !== undefined) {
+      // 如果listKey存在，则代表当前组件是在组件列表中
+      // 将listKey存储在state.__k中，并自动将此值传值到模板中，用于优化wx:for循环性能
+      if (this.state.asMutable) {
+        this.state = this.state.set('__k', __k);
+      } else {
+        this.state.__k = __k;
+      }
+    }
+    this._children = {};
+
+    if (__DEV__) {
+      this._checkProps();
+    }
+
+    // 绑定生命周期函数
+    this._bindLifecycle();
+
+    if (key && this.onLoad) {
+      this.onLoad();
+    }
+
+    if (key && this.page._ready && this.onReady) {
+      // 如果 key 不为空，则代表当前组件不是页面根组件
+      // 如果 page._ready 则代表页面已经ready，说明当前组件是页面ready后才动态生成的
+      this.onReady();
+    }
+
+    // 更新页面数据
+    this.page.updateData(this.path, this.state);
+    this._inited = true;
+  }
+
+  /**
+   * 初始化时，更新组件的key、id、path等属性
    * @param {string} key         组件key
    * @param {Component} [parent] 父组件
    * @param {number} [listIndex] 组件在列表中的index
@@ -131,48 +200,6 @@ export default class Component {
   }
 
   /**
-   * 初始化组件
-   * @private
-   * @param {string} key         组件key
-   * @param {Component} [parent] 父组件
-   * @param {number} [listIndex] 组件在列表中的index
-   * @param {number} [listKey]   组件在列表中的key定义
-   */
-  _init(key: string, parent?: Component, listIndex?: number, listKey?: string): void {
-    if (this._inited) return;
-    this._setKey(key, parent, listIndex, listKey);
-    //console.log(this.path + '#init', this);
-    if (!this.state) {
-      this.state = {};
-    }
-    let __k = listKey || listIndex;
-    if (__k !== undefined) {
-      if (this.state.asMutable) {
-        this.state = this.state.set('__k', __k);
-      } else {
-        this.state.__k = __k;
-      }
-    }
-    this._children = {};
-
-    if (__DEV__) {
-      this._checkProps();
-    }
-
-    this._bindLifecycle();
-
-    if (key && this.onLoad) {
-      this.onLoad();
-    }
-    if (key && this.page._ready && this.onReady) {
-      this.onReady();
-    }
-
-    this.page.updateData(this.path, this.state);
-    this._inited = true;
-  }
-
-  /**
    * Development环境下检查propsTypes属性设置
    * @private
    */
@@ -198,6 +225,7 @@ export default class Component {
 
   /**
    * 更新所有子控件，负责实例化子控件以及更新其props
+   * 调用组件的children()方法获取子组件列表，如果对应的子组件存在则调用子组件onUpdate更新props，否者自动创建子组件
    * @private
    */
   _updateChildren(): $Children {
@@ -207,11 +235,14 @@ export default class Component {
       if (__DEV__) {
         console.log('%c%s %s -> %o', 'color:#9a23cc', this.id, 'children()', configs);
       }
+      // 遍历子组件配置列表
       Object.keys(configs).forEach((key) => {
         let config: $ChildConfig | Array<$ChildConfig> = configs[key];
         if (Array.isArray(config)) {
-          let map = {};
-          let used = [];
+          // 如果子组件是一个列表
+
+          let map = {};  // 依据列表中每个子组件key生成的原来组件隐射
+          let used = []; // 存放已知的子组件key，用来检测多个子组件是否重复使用同一个key
           let list: Array<Component> = children[key];
           if (list && Array.isArray(list)) {
             list.forEach((item) => {
@@ -233,16 +264,20 @@ export default class Component {
               } else if (__DEV__) {
                 console.warn(`"${this.name}"的子组件"${key}"列表项必须"key"属性定义发现重复值："${childKey}"`);
               }
+              used.push(childKey);
             }
             list.push(this._updateChild(com, c));
           });
           children[key] = list;
+          // 子组件列表更新后，统一更新列表对应的页面数据
           this.page.updateData(this.path + '.' + key, list.map(com => com.state));
         } else {
-          let component: $Child = children[key]; //原来的组件
-          if (!Array.isArray(component)) { //我们知道此处original不会为数组，但flow不知道
-            children[key] = this._updateChild(component, config);
-            component && this.page.updateData(component.path, component.state);
+          // 子组件是单个组件，不是列表
+          let component: Component = children[key]; // 原来的组件
+          children[key] = this._updateChild(component, config);
+          if (component) {
+            // 如果子组件原来就存在，则更后自动更新页面数据
+            this.page.updateData(component.path, component.state);
           }
         }
       });
@@ -260,10 +295,11 @@ export default class Component {
    */
   _updateChild(component?: Component, config: $ChildConfig): Component {
     if (component) {
-      //找到了原有实例，更新props
+      // 找到了原有实例，更新props
       if (config.props && utils.shouldUpdate(component.props, config.props)) {
         let nextProps;
-        if (component.props && component.props.merge) {
+        if (component.props && component.props.merge && component.props.asMutable) {
+          // 如果 props.merge 存在，则代表props是一个Immutable对象
           nextProps = component.props.merge(config.props);
         } else {
           nextProps = Object.assign({}, component.props, config.props);
@@ -274,7 +310,7 @@ export default class Component {
         component.props = nextProps;
       }
     } else {
-      //没有找到原有实例，实例化一个新的
+      // 没有找到原有实例，实例化一个新的
       let ComponentClass = config.component;
       component = new ComponentClass(config.props);
       component._config = config;
@@ -284,9 +320,11 @@ export default class Component {
 
   /**
    * 绑定生命周期函数
+   * 用于在组件树中逐层触发生命周期函数
    * @private
    */
   _bindLifecycle() {
+    // 如果已经全部绑定过
     if (this._boundAllLifecycle) return;
     let children: $Children = this._updateChildren();
 
@@ -295,7 +333,7 @@ export default class Component {
     if (!childrenKeys.length) {
       return;
     }
-    //优化性能
+    // 优化性能 只绑定子组件中存在的生命周期函数
     let existFn: Array<string> = [];
     let allFn = ['onReady', 'onRouteEnd', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'];
 
@@ -304,7 +342,7 @@ export default class Component {
     }
 
     allFn.forEach((name) => {
-      // $FlowFixMe 安全访问证明周期函数
+      // $Flow 安全访问生命周期函数
       if (this[name] && !this._bound[name]) {
         existFn.push(name);
       }
@@ -318,11 +356,10 @@ export default class Component {
         if (!component.length) {
           hasEmpayArray = true;
         }
-        //组件列表
+        // 组件列表
         component.forEach((item, index) => {
           item._init(k, this, index, item._config.key);
           allFn.forEach((name) => {
-            // $FlowFixMe 安全访问证明周期函数
             if (existFn.indexOf(name) === -1 && item[name]) {
               existFn.push(name);
             }
@@ -331,7 +368,7 @@ export default class Component {
       } else {
         component._init(k, this);
         allFn.forEach((name) => {
-          // $FlowFixMe 安全访问证明周期函数
+          // $Flow 安全访问生命周期函数
           if (existFn.indexOf(name) === -1 && component[name]) {
             existFn.push(name);
           }
@@ -340,26 +377,26 @@ export default class Component {
     });
 
     if (!hasEmpayArray) {
+      // 如果不存在空数组，则判定所有绑定完成
+      // 因为如果存在空数组，列表中的子组件会在稍后动态创建，那么当下是无法知道子组件都存在什么生命周期函数，所以必须随后再次绑定
       this._boundAllLifecycle = true;
     }
 
     existFn.forEach((name) => {
       if (this._bound[name]) return;
       this._bound[name] = true;
-      // $FlowFixMe 安全访问证明周期函数
+      // $Flow 安全访问生命周期函数
       let func = this[name];
-      // $FlowFixMe 安全访问证明周期函数
+      // $Flow 安全访问生命周期函数
       this[name] = function (...args) {
         Object.keys(this._children).forEach((k) => {
           let component: $Child = this._children[k];
           if (Array.isArray(component)) {
             component.forEach((com) => {
-              // $FlowFixMe 安全访问证明周期函数
               if (com[name]) {
                 com[name].apply(com, args);
               }
             });
-            // $FlowFixMe 安全访问证明周期函数
           } else if (component[name]) {
             component[name].apply(component, args);
           }

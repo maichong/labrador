@@ -8,7 +8,9 @@
 
 'use strict';
 
+// $Flow
 import _set from 'lodash/set';
+// $Flow
 import _get from 'lodash/get';
 import Component from './component';
 //import * as utils from './utils';
@@ -41,8 +43,9 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
 
   config._dispatch = function (event: $Event): ?string {
     console.log('%cdispatch: %s %s %o', 'color:#2abb40', event.type, event.currentTarget.dataset.path, event);
-    let com: Component = root;
+    let com: $Child = root;
     let path = event.currentTarget.dataset.path || '';
+    // $Flow
     let handler = event.currentTarget.dataset['bind' + event.type] || event.currentTarget.dataset['catch' + event.type];
     while (path) {
       let index = path.indexOf('.');
@@ -55,7 +58,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
         path = path.substr(index + 1);
       }
       if (Array.isArray(com)) {
-        com = com[key];
+        com = com[parseInt(key)];
       } else {
         com = com._children[key];
       }
@@ -66,6 +69,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     }
     if (com[handler]) {
       if (__DEV__) {
+        // $Flow
         console.log('%c%s %s(%o)', 'color:#2a8f99', com.id, handler, event);
       }
       return com[handler](event);
@@ -76,7 +80,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
 
   ['onReady', 'onRouteEnd', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'].forEach(function (name) {
     config[name] = function () {
-      // $FlowFixMe 安全访问证明周期函数
+      // $Flow 安全访问证明周期函数
       if (root[name]) {
         return root[name].apply(root.page, arguments);
       }

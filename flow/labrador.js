@@ -63,6 +63,6 @@ declare interface $Page {
   root: Component;
   page: $Page;
   data: $DataMap;
-  setData($DataMap):void;
-  updateData(path: string, state: $DataMap):void;
+  setData(data: $DataMap):void;
+  updateData(path: string, state: $DataMap | Array<$DataMap>):void;
 }

@@ -10,29 +10,33 @@ import Component from './component';
 import PropTypes from './prop-types';
 import _createPage from './create-page';
 
+// 特别指定的wx对象中不进行Promise封装的方法
 const noPromiseMethods = {
-  stopRecord: true,
-  pauseVoice: true,
-  stopVoice: true,
-  pauseBackgroundAudio: true,
-  stopBackgroundAudio: true,
-  showNavigationBarLoading: true,
-  hideNavigationBarLoading: true,
-  createAnimation: true,
-  createContext: true,
-  hideKeyboard: true,
-  stopPullDownRefresh: true
+  clearStorage: 1,
+  hideToast: 1,
+  showNavigationBarLoading: 1,
+  hideNavigationBarLoading: 1,
+  drawCanvas: 1,
+  canvasToTempFilePath: 1,
+  hideKeyboard: 1,
 };
 
 const labrador = {
+  // 原始wx对象
   wx,
+  // getApp() 优雅的封装
   get app() {
     return getApp();
   }
 };
 
-function forEach(key) {
-  if (noPromiseMethods[key] || key.substr(0, 2) === 'on' || /\w+Sync$/.test(key)) {
+Object.keys(wx).forEach((key) => {
+  if (
+    noPromiseMethods[key]                        // 特别指定的方法
+    || /^(on|create|stop|pause|close)/.test(key) // 以on* create* stop* pause* close* 开头的方法
+    || /\w+Sync$/.test(key)                      // 以Sync结尾的方法
+  ) {
+    // 不进行Promise封装
     labrador[key] = function () {
       if (__DEV__) {
         let res = wx[key].apply(wx, arguments);
@@ -40,7 +44,7 @@ function forEach(key) {
           res = {};
         }
         if (res && typeof res === 'object') {
-          res.then = function () {
+          res.then = () => {
             console.warn('wx.' + key + ' is not a async function, you should not use await ');
           };
         }
@@ -51,11 +55,12 @@ function forEach(key) {
     return;
   }
 
+  // 其余方法自动Promise化
   labrador[key] = function (obj) {
     obj = obj || {};
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       obj.success = resolve;
-      obj.fail = function (res) {
+      obj.fail = (res) => {
         if (res && res.errMsg) {
           reject(new Error(res.errMsg));
         } else {
@@ -65,9 +70,7 @@ function forEach(key) {
       wx[key](obj);
     });
   };
-}
-
-Object.keys(wx).forEach(forEach);
+});
 
 export default labrador;
 export { Component, PropTypes, _createPage };
