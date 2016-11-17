@@ -107,18 +107,8 @@ export default class Component {
     // 内部state数据更新后，自动更新页面数据
     this.page.updateData(this.path, this.state);
     // 更新子组件列表
-    let children = this._updateChildren();
+    this._updateChildren(true);
 
-    // 则检查子组件是否初始化
-    // 因为state变化后，children()方法有可能返回了动态更改过的子组件列表
-    Object.keys(children).forEach((k) => {
-      let component: $Child = children[k];
-      if (Array.isArray(component)) {
-        component.forEach((item, index) => item._init(k, this, index, item._config.key));
-      } else {
-        component._init(k, this);
-      }
-    });
   }
 
   /**
@@ -132,6 +122,10 @@ export default class Component {
   _init(key: string, parent?: Component, listIndex?: number, listKey?: string): void {
     if (this._inited) return;
     this._setKey(key, parent, listIndex, listKey);
+    if (__DEV__) {
+      // $Flow
+      console.log('%c%s init %o', 'color:#9a23cc', this.id, this);
+    }
     // console.log(this.path + '#init', this);
     if (!this.state) {
       this.state = {};
@@ -226,9 +220,10 @@ export default class Component {
   /**
    * 更新所有子控件，负责实例化子控件以及更新其props
    * 调用组件的children()方法获取子组件列表，如果对应的子组件存在则调用子组件onUpdate更新props，否者自动创建子组件
+   * @param {boolean} autoInit  是否自动初始化子组件
    * @private
    */
-  _updateChildren(): $Children {
+  _updateChildren(autoInit?: boolean): $Children {
     let children = this._children || {};
     let configs = this.children && this.children();
     if (configs) {
@@ -253,7 +248,7 @@ export default class Component {
           }
           list = [];
           config.forEach((c: $ChildConfig) => {
-            if (__DEV__ && !c.key) {
+            if (__DEV__ && c.key === undefined) {
               console.warn(`"${this.name}"的子组件"${key}"列表项必须包含"key"属性定义`);
             }
             let com;
@@ -266,7 +261,7 @@ export default class Component {
               }
               used.push(childKey);
             }
-            list.push(this._updateChild(com, c));
+            list.push(this._updateChild(com, c, autoInit));
           });
           children[key] = list;
           // 子组件列表更新后，统一更新列表对应的页面数据
@@ -274,7 +269,7 @@ export default class Component {
         } else {
           // 子组件是单个组件，不是列表
           let component: Component = children[key]; // 原来的组件
-          children[key] = this._updateChild(component, config);
+          children[key] = this._updateChild(component, config, autoInit);
           if (component) {
             // 如果子组件原来就存在，则更后自动更新页面数据
             this.page.updateData(component.path, component.state);
@@ -283,6 +278,19 @@ export default class Component {
       });
     }
     this._children = children;
+
+    if (autoInit) {
+      // 则检查子组件是否初始化
+      // 因为state变化后，children()方法有可能返回了动态更改过的子组件列表
+      Object.keys(children).forEach((k) => {
+        let component: $Child = children[k];
+        if (Array.isArray(component)) {
+          component.forEach((item, index) => item._init(k, this, index, item._config.key));
+        } else {
+          component._init(k, this);
+        }
+      });
+    }
     return children;
   }
 
@@ -290,10 +298,11 @@ export default class Component {
    * 更新单个子组件
    * @param component
    * @param config
+   * @param {boolean} autoInit  是否自动初始化子组件
    * @returns {Component}
    * @private
    */
-  _updateChild(component?: Component, config: $ChildConfig): Component {
+  _updateChild(component?: Component, config: $ChildConfig, autoInit?: boolean): Component {
     if (component) {
       // 找到了原有实例，更新props
       if (config.props && utils.shouldUpdate(component.props, config.props)) {
@@ -305,9 +314,22 @@ export default class Component {
           nextProps = Object.assign({}, component.props, config.props);
         }
         if (component.onUpdate) {
-          component.onUpdate(nextProps);
+          if (__DEV__) {
+            // Development
+            let original = utils.getDebugObject(component.props);
+            component.onUpdate(nextProps);
+            console.log('%c%s onUpdate(%o) -> %o Component:%o',
+              'color:#2a8f99',
+              this.id, original,
+              utils.getDebugObject(component.props),
+              component
+            );
+          } else {
+            component.onUpdate(nextProps);
+          }
         }
         component.props = nextProps;
+        component._updateChildren(autoInit);
       }
     } else {
       // 没有找到原有实例，实例化一个新的
@@ -326,7 +348,7 @@ export default class Component {
   _bindLifecycle() {
     // 如果已经全部绑定过
     if (this._boundAllLifecycle) return;
-    let children: $Children = this._updateChildren();
+    let children: $Children = this._updateChildren(false);
 
     let childrenKeys = Object.keys(children);
 

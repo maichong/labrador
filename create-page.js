@@ -42,7 +42,9 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
   config.name = '';
 
   config._dispatch = function (event: $Event): ?string {
-    console.log('%cdispatch: %s %s %o', 'color:#2abb40', event.type, event.currentTarget.dataset.path, event);
+    if (__DEV__) {
+      console.log('%cdispatch: %s %s %o', 'color:#2abb40', event.type, event.currentTarget.dataset.path, event);
+    }
     let com: $Child = root;
     let path = event.currentTarget.dataset.path || '';
     // $Flow
@@ -70,7 +72,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     if (com[handler]) {
       if (__DEV__) {
         // $Flow
-        console.log('%c%s %s(%o)', 'color:#2a8f99', com.id, handler, event);
+        console.log('%c%s %s(%o)', 'color:#2abb40', com.id, handler, event);
       }
       return com[handler](event);
     }
