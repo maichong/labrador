@@ -13,7 +13,7 @@ import _set from 'lodash/set';
 // $Flow
 import _get from 'lodash/get';
 import Component from './component';
-//import * as utils from './utils';
+import * as utils from './utils';
 
 /**
  * 构建列表数据项
@@ -80,18 +80,17 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     return undefined;
   };
 
-  ['onReady', 'onRouteEnd', 'onShow', 'onHide', 'onUnload', 'onPullDownRefreash'].forEach(function (name) {
-    config[name] = function () {
-      // $Flow 安全访问证明周期函数
-      if (root[name]) {
-        return root[name].apply(root.page, arguments);
-      }
+  ['onRouteEnd', 'onUnload', 'onPullDownRefreash'].forEach(function (name) {
+    config[name] = function (...args) {
+      utils.callLifecycle(root, name, args);
     };
   });
 
   config.onLoad = function () {
     page = this;
     page.page = page;
+    page._show = false;
+    page._ready = false;
 
     page.updateData = function (path: string, state: $DataMap | Array<$DataMap>) {
       //console.log('updateData', path, state);
@@ -112,23 +111,9 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       }
     };
 
-    let bindTimeout = 0;
-    page._bindLifecycle = function () {
-      if (!page._ready || root._boundAllLifecycle || bindTimeout) {
-        return;
-      }
-      bindTimeout = setTimeout(() => {
-        bindTimeout = 0;
-        root._bindLifecycle(true);
-      }, 0);
-    };
-
-
     page.root = root = new ComponentClass({});
     root._config = {};
-
     root.page = page;
-
 
     root.id = page.__route__;
     root.page = page;
@@ -143,10 +128,18 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
   };
 
   config.onReady = function () {
-    this._ready = true;
-    if (root.onReady) {
-      return root.onReady.apply(root, arguments);
-    }
+    page._ready = true;
+    utils.callLifecycle(root, 'onReady');
+  };
+
+  config.onShow = function () {
+    page._show = true;
+    utils.callLifecycle(root, 'onShow');
+  };
+
+  config.onHide = function () {
+    page._show = false;
+    utils.callLifecycle(root, 'onHide');
   };
 
   return config;

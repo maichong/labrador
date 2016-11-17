@@ -6,6 +6,13 @@
 
 // @flow
 
+import type Component from './component';
+
+/**
+ * 获取用于调试输出的对象
+ * @param {Object} object
+ * @returns {Object}
+ */
 export function getDebugObject(object: Object): Object {
   if (__DEV__) {
     if (typeof object !== 'object' || !object || object.asMutable) return object;
@@ -16,6 +23,12 @@ export function getDebugObject(object: Object): Object {
   return object;
 }
 
+/**
+ * 判断是否需要更新
+ * @param {Object} original  原有对象
+ * @param {Object} append    新增数据
+ * @returns {boolean}
+ */
 export function shouldUpdate(original: Object, append: Object): boolean {
   if (original === append) return false;
   for (let key in append) {
@@ -30,4 +43,31 @@ export function shouldUpdate(original: Object, append: Object): boolean {
     }
   }
   return false;
+}
+
+/**
+ * 递归调用组件的生命周期函数
+ * @param {Component} component
+ * @param {string} name
+ * @param {array} [args]
+ */
+export function callLifecycle(component: Component, name: string, args?: Array<*>) {
+  // $Flow 安全访问生命周期函数
+  if (component[name]) {
+    if (__DEV__) {
+      console.log('%c%s %s()', 'color:#9a23cc', component.id, name);
+    }
+    component[name].apply(component, args);
+  }
+
+  if (component._children) {
+    for (let key in component._children) {
+      let child: $Child = component._children[key];
+      if (Array.isArray(child)) {
+        child.forEach(item => callLifecycle(item, name, args));
+      } else {
+        callLifecycle(child, name, args);
+      }
+    }
+  }
 }

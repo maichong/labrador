@@ -59,11 +59,11 @@ declare type $Children = {[key: string]: Component | Array<Component>};
 
 declare interface $Page {
   __route__: string;
-  _ready: true;
+  _ready: boolean;
+  _show: boolean;
   root: Component;
   page: $Page;
   data: $DataMap;
   setData(data: $DataMap):void;
   updateData(path: string, state: $DataMap | Array<$DataMap>):void;
-  _bindLifecycle():void;
 }

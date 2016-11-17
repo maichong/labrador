@@ -25,6 +25,7 @@
     "class-methods-use-this": 1,
     "no-prototype-builtins": 0,
     "import/no-extraneous-dependencies": 1,
+    "max-len": [2, {"code": 120, "ignoreComments": true}],
     "radix": 0,
     "strict": 0,
     "object-shorthand": 0,
