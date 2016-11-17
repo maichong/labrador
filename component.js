@@ -32,6 +32,8 @@ export default class Component {
   _children: $Children;
   // 组件实例化时的参数
   _config: {};
+  //演示更新计时器
+  _updateTimer: 0;
 
   // 组件ID
   id: string;
@@ -108,6 +110,9 @@ export default class Component {
     this.page.updateData(this.path, this.state);
     // 更新子组件列表
     this._updateChildren(true);
+  }
+
+  _update() {
 
   }
 
@@ -150,6 +155,9 @@ export default class Component {
     this._bindLifecycle();
 
     if (key && this.onLoad) {
+      if (__DEV__) {
+        console.log('%c%s onLoad()', 'color:#9a23cc', this.id);
+      }
       this.onLoad();
     }
 
@@ -256,12 +264,23 @@ export default class Component {
             if (childKey && map.hasOwnProperty(childKey)) {
               if (used.indexOf(childKey) === -1) {
                 com = map[childKey];
+                delete map[childKey];
               } else if (__DEV__) {
                 console.warn(`"${this.name}"的子组件"${key}"列表项必须"key"属性定义发现重复值："${childKey}"`);
               }
               used.push(childKey);
             }
             list.push(this._updateChild(com, c, autoInit));
+          });
+
+          // 销毁没有用处的子组件
+          Object.keys(map).forEach((k) => {
+            if (map[k].onUnload) {
+              if (__DEV__) {
+                console.log('%c%s onUnload()', 'color:#9a23cc', map[k].id);
+              }
+              map[k].onUnload();
+            }
           });
           children[key] = list;
           // 子组件列表更新后，统一更新列表对应的页面数据
@@ -343,9 +362,10 @@ export default class Component {
   /**
    * 绑定生命周期函数
    * 用于在组件树中逐层触发生命周期函数
+   * @param {boolean} [recursive] 递归调用子控件
    * @private
    */
-  _bindLifecycle() {
+  _bindLifecycle(recursive) {
     // 如果已经全部绑定过
     if (this._boundAllLifecycle) return;
     let children: $Children = this._updateChildren(false);
@@ -353,6 +373,8 @@ export default class Component {
     let childrenKeys = Object.keys(children);
 
     if (!childrenKeys.length) {
+      this._boundAllLifecycle = true;
+      this.page._bindLifecycle();
       return;
     }
     // 优化性能 只绑定子组件中存在的生命周期函数
@@ -371,6 +393,7 @@ export default class Component {
     });
 
     let hasEmpayArray = false;
+    let boundAllLifecycle = true;
 
     childrenKeys.forEach((k) => {
       let component: $Child = children[k];
@@ -380,7 +403,13 @@ export default class Component {
         }
         // 组件列表
         component.forEach((item, index) => {
+          if (recursive && item._inited && !item._boundAllLifecycle) {
+            item._bindLifecycle(recursive);
+          }
           item._init(k, this, index, item._config.key);
+          if (!item._boundAllLifecycle) {
+            boundAllLifecycle = false;
+          }
           allFn.forEach((name) => {
             if (existFn.indexOf(name) === -1 && item[name]) {
               existFn.push(name);
@@ -388,7 +417,13 @@ export default class Component {
           });
         });
       } else {
+        if (recursive && component._inited && !component._boundAllLifecycle) {
+          component._bindLifecycle(recursive);
+        }
         component._init(k, this);
+        if (!component._boundAllLifecycle) {
+          boundAllLifecycle = false;
+        }
         allFn.forEach((name) => {
           // $Flow 安全访问生命周期函数
           if (existFn.indexOf(name) === -1 && component[name]) {
@@ -397,12 +432,6 @@ export default class Component {
         });
       }
     });
-
-    if (!hasEmpayArray) {
-      // 如果不存在空数组，则判定所有绑定完成
-      // 因为如果存在空数组，列表中的子组件会在稍后动态创建，那么当下是无法知道子组件都存在什么生命周期函数，所以必须随后再次绑定
-      this._boundAllLifecycle = true;
-    }
 
     existFn.forEach((name) => {
       if (this._bound[name]) return;
@@ -416,10 +445,16 @@ export default class Component {
           if (Array.isArray(component)) {
             component.forEach((com) => {
               if (com[name]) {
+                if (__DEV__) {
+                  console.log('%c%s %s()', 'color:#9a23cc', com.id, name);
+                }
                 com[name].apply(com, args);
               }
             });
           } else if (component[name]) {
+            if (__DEV__) {
+              console.log('%c%s %s()', 'color:#9a23cc', component.id, name);
+            }
             component[name].apply(component, args);
           }
         });
@@ -428,5 +463,16 @@ export default class Component {
         }
       };
     });
+
+    if (!hasEmpayArray && boundAllLifecycle) {
+      // 如果不存在空数组，则判定所有绑定完成
+      // 因为如果存在空数组，列表中的子组件会在稍后动态创建，那么当下是无法知道子组件都存在什么生命周期函数，所以必须随后再次绑定
+      // 如果子组件没有完成绑定，则父组件也视为没有完成绑定
+      this._boundAllLifecycle = true;
+    }
+
+    if (this._boundAllLifecycle) {
+      this.page._bindLifecycle();
+    }
   }
 }

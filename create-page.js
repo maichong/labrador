@@ -112,6 +112,17 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       }
     };
 
+    let bindTimeout = 0;
+    page._bindLifecycle = function () {
+      if (!page._ready || root._boundAllLifecycle || bindTimeout) {
+        return;
+      }
+      bindTimeout = setTimeout(() => {
+        bindTimeout = 0;
+        root._bindLifecycle(true);
+      }, 0);
+    };
+
 
     page.root = root = new ComponentClass({});
     root._config = {};
