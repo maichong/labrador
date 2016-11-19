@@ -15,6 +15,8 @@ import * as utils from './utils';
  * @class Component
  */
 export default class Component {
+  // 默认props
+  static defaultProps: $DataMap;
   // 组件props类型定义，必须为static
   static propTypes: {[key: string]:$PropValidator};
 
@@ -67,7 +69,7 @@ export default class Component {
    * @param {object} [props] 组件props初始数据
    */
   constructor(props?: $DataMap) {
-    this.props = props || {};
+    this.props = Object.assign({}, this.constructor.defaultProps, props);
     this._setStateQueue = [];
     this._setStateCallbacks = [];
   }
@@ -149,7 +151,6 @@ export default class Component {
     if (this._inited) return;
     this._setKey(key, parent, listIndex, listKey);
     if (__DEV__) {
-      // $Flow
       console.log('%c%s init %o', 'color:#9a23cc', this.id, this);
     }
     // console.log(this.path + '#init', this);
