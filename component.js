@@ -321,7 +321,7 @@ export default class Component {
           });
           children[key] = list;
           // 子组件列表更新后，统一更新列表对应的页面数据
-          this.page.updateData(this.path + '.' + key, list.map(com => com.state));
+          this.page.updateData((this.path ? this.path + '.' : '') + key, list.map(com => com.state));
         } else {
           // 子组件是单个组件，不是列表
           let component: Component = children[key]; // 原来的组件
