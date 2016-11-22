@@ -27,6 +27,11 @@ const labrador = {
   // getApp() 优雅的封装
   get app() {
     return getApp();
+  },
+
+  // getCurrentPages() 优雅的封装
+  get currentPages() {
+    return getCurrentPages();
   }
 };
 

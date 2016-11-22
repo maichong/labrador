@@ -42,9 +42,6 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
   config.name = '';
 
   config._dispatch = function (event: $Event): ?string {
-    if (__DEV__) {
-      console.log('%cdispatch: %s %s %o', 'color:#2abb40', event.type, event.currentTarget.dataset.path, event);
-    }
     let com: $Child = root;
     let path = event.currentTarget.dataset.path || '';
     // $Flow
@@ -76,7 +73,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       }
       return com[handler](event);
     }
-    console.error('Can not resolve event handle ' + event.currentTarget.dataset.path + '#' + handler);
+    console.error('Can not resolve event handle ' + com.id + '#' + handler);
     return undefined;
   };
 
