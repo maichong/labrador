@@ -65,5 +65,5 @@ declare interface $Page {
   page: $Page;
   data: $DataMap;
   setData(data: $DataMap):void;
-  updateData(path: string, state: $DataMap | Array<$DataMap>):void;
+  updateData(newData: Object):void;
 }

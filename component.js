@@ -8,6 +8,7 @@
 
 'use strict';
 
+import deepEqual from 'deep-equal';
 import * as utils from './utils';
 
 /**
@@ -28,6 +29,8 @@ export default class Component {
   _listKey: string| number | void;
   // 当前组件的所有子组件KV对
   _children: $Children;
+  // children() 方法返回的子控件配置缓存
+  _childrenConfigs: $ChildrenConfig;
   // 组件实例化时的参数
   _config: {};
 
@@ -157,16 +160,6 @@ export default class Component {
     if (!this.state) {
       this.state = {};
     }
-    let __k = listKey || listIndex;
-    if (__k !== undefined) {
-      // 如果listKey存在，则代表当前组件是在组件列表中
-      // 将listKey存储在state.__k中，并自动将此值传值到模板中，用于优化wx:for循环性能
-      if (this.state.asMutable) {
-        this.state = this.state.set('__k', __k);
-      } else {
-        this.state.__k = __k;
-      }
-    }
     this._children = {};
 
     if (__DEV__) {
@@ -191,10 +184,8 @@ export default class Component {
     }
 
     // 更新页面数据
-    this.page.updateData(this.path, this.state);
     this._inited = true;
-
-    this._updateChildren();
+    this._update();
   }
 
   /**
@@ -224,6 +215,10 @@ export default class Component {
       this.id += '.' + listIndex;
     }
     this.name = this.constructor.name || this.path;
+    if (__DEV__ && (key === 'props' || key === 'state')) {
+      // $Flow 我们知道parent一定存在，但是Flow不知道
+      console.error(`${parent.id} 的子组件'${this.name}'的'key'不能设置为'props'或'state'，请修改 ${parent.id}#children() 方法的返回值`);
+    }
   }
 
   /**
@@ -236,7 +231,12 @@ export default class Component {
       this._updateTimer = 0;
 
       // 内部state数据更新后，自动更新页面数据
-      this.page.updateData(this.path, this.state);
+
+      let path = this.path ? this.path + '.' : '';
+      let newData = {};
+      newData[path + 'props'] = this.props;
+      newData[path + 'state'] = this.state;
+      this.page.updateData(newData);
 
       // 更新子组件列表
       this._updateChildren();
@@ -275,7 +275,8 @@ export default class Component {
   _updateChildren(): $Children {
     let children = this._children || {};
     let configs = this.children && this.children();
-    if (configs) {
+    // 性能优化，当children返回的配置发生变化后才真正更新子控件
+    if (!deepEqual(configs, this._childrenConfigs)) {
       if (__DEV__) {
         console.log('%c%s %s -> %o', 'color:#9a23cc', this.id, 'children()', configs);
       }
@@ -321,18 +322,33 @@ export default class Component {
           });
           children[key] = list;
           // 子组件列表更新后，统一更新列表对应的页面数据
-          this.page.updateData((this.path ? this.path + '.' : '') + key, list.map(com => com.state));
+          let newData = [];
+          list.forEach((com) => {
+            newData.push({
+              props: com.props,
+              state: com.state,
+              __k: com._listKey
+            });
+          });
+          let path = this.path ? this.path + '.' + key : key;
+          this.page.updateData({
+            [path]: newData
+          });
         } else {
           // 子组件是单个组件，不是列表
           let component: Component = children[key]; // 原来的组件
           children[key] = this._updateChild(key, component, config);
           if (component) {
             // 如果子组件原来就存在，则更后自动更新页面数据
-            this.page.updateData(component.path, component.state);
+            let newData = {};
+            newData[component.path + '.props'] = component.props;
+            newData[component.path + '.state'] = component.state;
+            this.page.updateData(newData);
           }
         }
       });
     }
+    this._childrenConfigs = configs;
     this._children = children;
     return children;
   }
@@ -374,7 +390,7 @@ export default class Component {
           }
         }
         component.props = nextProps;
-        component._updateChildren();
+        component._update();
       }
     } else {
       // 没有找到原有实例，实例化一个新的

@@ -22,15 +22,14 @@ import * as utils from './utils';
  * @returns {{_: *}}
  */
 function buildListItem(list: Array<$DataMap>, item: $DataMap): $DataMap {
-  let res = { _: item };
   if (list && list.length && item.__k !== undefined) {
     for (let t of list) {
-      if (t._ && t._.__k === item.__k) {
-        return Object.assign({}, t, res);
+      if (t.__k !== undefined && t.__k === item.__k) {
+        return Object.assign({}, t, item);
       }
     }
   }
-  return res;
+  return item;
 }
 
 module.exports = function createPage(ComponentClass: Class<Component>) {
@@ -73,6 +72,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       }
       return com[handler](event);
     }
+    // $Flow 我们知道com在这里一定是一个组件，而非组件数组，但是Flow不知道
     console.error('Can not resolve event handle ' + com.id + '#' + handler);
     return undefined;
   };
@@ -89,23 +89,25 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     page._show = false;
     page._ready = false;
 
-    page.updateData = function (path: string, state: $DataMap | Array<$DataMap>) {
-      //console.log('updateData', path, state);
-      if (!path) {
-        page.setData({ _: state });
-      } else {
-        let data = page.data;
-        if (Array.isArray(state)) {
+    page.updateData = function (newData: Object) {
+      // if (__DEV__) {
+      //   console.log('%c%s updateData(%o)', 'color:#2a8f99', page.__route__, utils.getDebugObject(newData));
+      // }
+      let data = page.data;
+
+      Object.keys(newData).forEach((path) => {
+        let dataMap = newData[path];
+        if (Array.isArray(dataMap)) {
+          // 如果是组件列表，需要与之前列表数据合并，这样主要为了在子组件嵌套情况下，不丢失底层子组件数据
           let list = _get(data, path); //原有data中列表数据
-          let newList = state.map((item) => buildListItem(list, item));
+          let newList = dataMap.map((item) => buildListItem(list, item));
           _set(data, path, newList);
         } else {
-          path += '._';
-          _set(data, path.split('.'), state);
+          _set(data, path.split('.'), dataMap);
         }
-        page.setData(data);
-        //console.log(utils.getDebugObject(page.data));
-      }
+      });
+
+      page.setData(data);
     };
 
     page.root = root = new ComponentClass({});

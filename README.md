@@ -236,12 +236,13 @@ export default class Title extends Component {
   };
 
   state = {
-    text: '',
     color: randomColor()
   };
 
   onUpdate(props) {
-    this.setState({ text: props.text });
+    this.setState({
+      color: randomColor()
+    });
   }
 
   handleTap() {
@@ -275,11 +276,13 @@ Labrador的目标是构建一个可以重用、嵌套的自定义组件方案，
 
 ```xml 
 <view class="text-view">
-  <text class="title-text" catchtap="handleTap" style="color:{{color}};">{{text}}</text>
+  <text class="title-text" catchtap="handleTap" style="color:{{state.color}};">{{props.text}}</text>
 </view>
 ```
 
 XML布局文件和微信WXML文件语法完全一致，只是扩充了两个自定义标签 `<component/>` 和 `<list/>`，下文中详细叙述。
+
+使用 `{{}}` 绑定变量时，以 `props.*` 或 `state.*` 开头，即XML模板文件能够访问组件对象的 `props` 和 `state`。
 
 ##### 样式 `src/compontents/title/title.less`
 
@@ -387,8 +390,8 @@ js逻辑代码中同样使用 `export default` 语句导出了一个默认类，
 ```xml
 <view class="container">
   <view class="userinfo" catchtap="handleViewTap">
-    <image class="userinfo-avatar" src="{{ userInfo.avatarUrl }}" background-size="cover"/>
-    <text class="userinfo-nickname">{{ userInfo.nickName }}</text>
+    <image class="userinfo-avatar" src="{{ state.userInfo.avatarUrl }}" background-size="cover"/>
+    <text class="userinfo-nickname">{{ state.userInfo.nickName }}</text>
   </view>
   <view class="usermotto">
     <component key="motto" name="title"/>
@@ -556,7 +559,7 @@ export function handleTap(c, run) {
 
 `labrador create` 命令在初始化项目时，会在项目根目录中创建一个 `.labrador` 项目配置文件，如果你的项目是使用 labrador-cli 0.3 版本创建的，可以手动增加此文件。
 
-配置文件为JSON格式，默认配置为：
+配置文件为[JSON5](https://github.com/json5/json5)格式，默认配置为：
 
 ```json
 {
@@ -644,11 +647,13 @@ import wx, { Component } from 'labrador';
 import wx, { Component } from 'labrador-immutable';
 ```
 
-如果你不习惯immutable，那么仍然可以继续使用 `labrador` 库;
+如果你不习惯immutable，那么仍然可以继续使用 `labrador` 库。
 
 ## 0.6版本升级指南
 
 我们在0.6版本将Labrador代码进行了彻底的重构，同时API进行了一些调整，基于0.5版本的项目需要升级代码后才能正常运行。
+
+升级代码前请首先将全局的 labrador-cli 和项目中所有 labrador 库升级到最新版本。
 
 #### 1. `__DEV__`
 
@@ -755,6 +760,24 @@ import wx, { Component } from 'labrador-immutable';
 ```
 不强制要求，只是建议。
 
+#### 10. 更新模板变量绑定
+模板中所有变量绑定需要增加指定 `state.` 或 `props.` 。
+
+```xml
+  <view>
+    <text class="{{className}}">{{title}}</text>
+    <template is="foo" data="{{...obj,bar}}"/>
+  </view>
+```
+更新为
+
+```xml
+  <view>
+    <text class="{{state.className}}">{{props.title}}</text>
+    <template is="foo" data="{{...state.obj,bar:state.bar}}"/>
+  </view>
+```
+
 ## ChangeLog
 
 #### 2016-10-09
@@ -792,6 +815,11 @@ import wx, { Component } from 'labrador-immutable';
 - SASS/SCSS 样式支持
 - generate 组件模板
 - labrador watch 更新 components 目录下文件时自动更新关联的pages
+
+#### 2016-11-23
+**labrador** 0.6.1
+- 模板访问props变量
+- 项目配置文件支持JSON5格式
 
 ## 贡献者
 
