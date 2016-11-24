@@ -35,6 +35,23 @@ const labrador = {
   }
 };
 
+if (__DEV__) {
+  Object.defineProperty(labrador, 'Component', {
+    get(){
+      console.error('labrador 0.6版本之后废弃了 wx.Component，请使用 ' +
+        '"import wx, { Component, PropsTypes } from \'labrador\'" 代替 ' +
+        '"import wx from \'labrador\'"');
+    }
+  });
+  Object.defineProperty(labrador, 'PropsTypes', {
+    get(){
+      console.error('labrador 0.6版本之后废弃了 wx.PropsTypes，请使用 ' +
+        '"import wx, { Component, PropsTypes } from \'labrador\'" 代替 ' +
+        '"import wx from \'labrador\'"');
+    }
+  });
+}
+
 Object.keys(wx).forEach((key) => {
   if (
     noPromiseMethods[key]                        // 特别指定的方法

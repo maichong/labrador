@@ -83,6 +83,11 @@ export default class Component {
    * @param {function} [callback]
    */
   setState(nextState: $DataMap, callback?: Function): void {
+    if (__DEV__) {
+      if (typeof nextState === 'string') {
+        console.error(this.id + '#setState() 第一个参数不能为字符串');
+      }
+    }
     if (!this._inited) {
       console.error(this.id + ' 组件未自动初始化之前请勿调用setState()，如果在组件构造函数中请直接使用"this.state={}"赋值语法');
     }
@@ -154,6 +159,9 @@ export default class Component {
     if (this._inited) return;
     this._setKey(key, parent, listIndex, listKey);
     if (__DEV__) {
+      if (this.data) {
+        console.error(this.id + ' Component data属性和 setData方法已经废弃,请使用state 和 setState代替');
+      }
       console.log('%c%s init %o', 'color:#9a23cc', this.id, this);
     }
     // console.log(this.path + '#init', this);

@@ -679,7 +679,7 @@ class Index extends Component{}
 
 #### 4. defaultProps
 
-强将组件类中的 `props={};` 更新为 `static defaultProps={}`;
+请将组件类中的 `props={};` 更新为 `static defaultProps={}`;
 
 #### 5. setState
 
@@ -777,6 +777,8 @@ import wx, { Component } from 'labrador-immutable';
     <template is="foo" data="{{...state.obj,bar:state.bar}}"/>
   </view>
 ```
+
+> 我们另外提供了Labrador升级工具，[labrador-upgrade](https://github.com/maichong/labrador-upgrade) 可以快速升级项目代码。
 
 ## ChangeLog
 
