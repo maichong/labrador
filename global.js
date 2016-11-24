@@ -13,5 +13,9 @@ module.exports = {
   Object: Object,
   RegExp: RegExp,
   String: String,
-  TypeError: TypeError
+  TypeError: TypeError,
+  setTimeout: setTimeout,
+  clearTimeout: clearTimeout,
+  setInterval: setInterval,
+  clearInterval: clearInterval
 };
