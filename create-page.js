@@ -83,11 +83,12 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     };
   });
 
-  config.onLoad = function () {
+  config.onLoad = function (options: Object) {
     page = this;
     page.page = page;
     page._show = false;
     page._ready = false;
+    page._loadOptions = options;
 
     page.updateData = function (newData: Object) {
       // if (__DEV__) {
@@ -122,7 +123,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       console.error(error.stack);
     }
     if (root.onLoad) {
-      root.onLoad();
+      root.onLoad(options);
     }
   };
 

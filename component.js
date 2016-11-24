@@ -170,7 +170,7 @@ export default class Component {
       if (__DEV__) {
         console.log('%c%s onLoad()', 'color:#9a23cc', this.id);
       }
-      this.onLoad();
+      this.onLoad(this.page._loadOptions);
     }
 
     if (key && this.page._ready) {

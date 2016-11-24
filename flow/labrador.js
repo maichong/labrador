@@ -61,6 +61,7 @@ declare interface $Page {
   __route__: string;
   _ready: boolean;
   _show: boolean;
+  _loadOptions: Object;
   root: Component;
   page: $Page;
   data: $DataMap;
