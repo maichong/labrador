@@ -4,7 +4,8 @@
  * @author Liang <liang@maichong.it>
  */
 
-module.exports = {
+
+const g = {
   Array: Array,
   Date: Date,
   Error: Error,
@@ -17,5 +18,9 @@ module.exports = {
   setTimeout: setTimeout,
   clearTimeout: clearTimeout,
   setInterval: setInterval,
-  clearInterval: clearInterval
+  clearInterval: clearInterval,
 };
+
+/* eslint no-useless-concat:0 */
+// 将关键字拆分，避免递归require自身
+module.exports = g['w' + 'indow'] = g['g' + 'lobal'] = g['s' + 'elf'] = g;
