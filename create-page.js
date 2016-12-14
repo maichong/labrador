@@ -41,7 +41,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
   config.name = '';
 
   config._dispatch = function (event: $Event): ?string {
-    let com: $Child = root;
+    let com: $Child = this.root;
     let path = event.currentTarget.dataset.path || '';
     // $Flow
     let handler = event.currentTarget.dataset['bind' + event.type] || event.currentTarget.dataset['catch' + event.type];
