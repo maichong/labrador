@@ -102,6 +102,8 @@ demo                 # 项目根目录
     --dist-dir [dir]     目标目录，默认为工作目录下的dist文件夹
     --modules-dir [dir]  NPM模块目录，默认为工作目录下的node_modules文件夹
     --temp-dir [dir]     临时目录，默认为工作目录下的.build文件夹
+    --ignore-minify-js   minify模式下，不压缩JS代码
+    --ignore-minify-page minify模式下，不强力压缩WXSS和WXML代码
 ```
 
 #### `labrador watch [options]` 编译当前项目并检测文件改动
@@ -133,12 +135,17 @@ demo                 # 项目根目录
   
   Names:
   
-    component         创建新组建
+    component         创建新组件
     page              创建新页面
     redux             创建Redux文件
     saga              创建Saga文件
 ```
 
+>例如 
+> * labrador generate page home/home
+> * labrador generate component home
+> * labrador generate redux home
+> * labrador generate saga home
 
 ## labrador 库
 
@@ -603,7 +610,7 @@ env       | 不同环境下的特殊设置，上边的例子中，如果是生�
 
 ## immutable
 
-我们强烈建议组建的 `state` 和 `props` 都定义为不可变，这样可以清晰地管理数据流，避免一些低级错误，也利于Labrador优化性能。
+我们强烈建议组件的 `state` 和 `props` 都定义为不可变，这样可以清晰地管理数据流，避免一些低级错误，也利于Labrador优化性能。
 
 在你的代码中可以调用 `seamless-immutable` 库：
 
@@ -648,6 +655,20 @@ import wx, { Component } from 'labrador-immutable';
 ```
 
 如果你不习惯immutable，那么仍然可以继续使用 `labrador` 库。
+
+## template/import 标签
+
+首先声明，不建议在模板中使用template和import标签，因为Labrador框架所做出的所有努力正是为了解决微信小程序框架无法组件化的问题，微信官方提供的template/import机制不能满足开发需求，所以Labrador才实现了自定义组件机制。而Labrador的自定义组件机制和template/import机制在实现逻辑上存在差异，无法无缝结合。
+
+但是，毕竟Labrador兼容底层所有小程序标签，虽然template/import机制谈不上是组件化方案，但毕竟轻量化实现了模板抽象，所以在简单的场景下可以使用template/import标签，但是需要注意以下几点：
+
+1. template 标签在编译时无法确定最终挂载点，即无法确定是哪一个对象引用了template，因为template是公用的。
+2. template 标签子节点上绑定的事件只能分发到Page对象上，不能分发到子组件对象上，因为 #1。
+3. 子组件中使用template标签时，只能用来显示数据，不能使用事件绑定，因为 #2。
+4. 子组件中import公共template文件时，`src` 的相对路径并非由当前子组件位置决定，而由子组件被引用时Page的位置决定。所以容易照成`src`路径混乱，尤其是子组件被多个Page引用时。
+5. 子组件中不建议使用template，因为 #2 #3 #4。
+6. 公用的template文件必须存放在templates或pages目录中，因为其他目录中的XML文件编译时会被抛弃。
+7. 如果template不写在独立的文件中，而是直接写在pages目录中的页面模板里，即不需要import情况下，不会有以上问题。
 
 ## 0.6版本升级指南
 
