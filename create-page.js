@@ -34,7 +34,6 @@ function buildListItem(list: Array<$DataMap>, item: $DataMap): $DataMap {
 
 module.exports = function createPage(ComponentClass: Class<Component>) {
   let config = {};
-  let root: Component;
   let page: $Page;
 
   config.data = {};
@@ -79,7 +78,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
 
   ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom'].forEach(function (name) {
     config[name] = function (...args) {
-      utils.callLifecycle(root, name, args);
+      utils.callLifecycle(this.root, name, args);
     };
   });
 
@@ -111,7 +110,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       page.setData(data);
     };
 
-    page.root = root = new ComponentClass({});
+    let root = page.root = new ComponentClass({});
     root._config = {};
     root.page = page;
 
@@ -129,17 +128,17 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
 
   config.onReady = function () {
     page._ready = true;
-    utils.callLifecycle(root, 'onReady');
+    utils.callLifecycle(this.root, 'onReady');
   };
 
   config.onShow = function () {
     page._show = true;
-    utils.callLifecycle(root, 'onShow');
+    utils.callLifecycle(this.root, 'onShow');
   };
 
   config.onHide = function () {
     page._show = false;
-    utils.callLifecycle(root, 'onHide');
+    utils.callLifecycle(this.root, 'onHide');
   };
 
   return config;
