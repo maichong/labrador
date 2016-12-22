@@ -77,7 +77,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     return undefined;
   };
 
-  ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom'].forEach(function (name) {
+  ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom', 'onShareAppMessage'].forEach(function (name) {
     config[name] = function (...args) {
       utils.callLifecycle(root, name, args);
     };
