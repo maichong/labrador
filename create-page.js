@@ -141,5 +141,11 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     utils.callLifecycle(this.root, 'onHide');
   };
 
+  config.onShareAppMessage = function () {
+    if (typeof root.onShareAppMessage === 'function') {
+      return root.onShareAppMessage()
+    }
+  };
+
   return config;
 };
