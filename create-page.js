@@ -76,7 +76,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     return undefined;
   };
 
-  ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom', 'onShareAppMessage'].forEach(function (name) {
+  ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom'].forEach(function (name) {
     config[name] = function (...args) {
       utils.callLifecycle(this.root, name, args);
     };
@@ -140,6 +140,16 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     page._show = false;
     utils.callLifecycle(this.root, 'onHide');
   };
+
+  if (ComponentClass.prototype.onShareAppMessage) {
+    config.onShareAppMessage = function () {
+      let share = this.root.onShareAppMessage();
+      if (__DEV__ && !share) {
+        console.error(this.root.id + ' onShareAppMessage() 没有返回分享数据');
+      }
+      return share;
+    };
+  }
 
   return config;
 };
