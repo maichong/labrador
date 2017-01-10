@@ -76,7 +76,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     return undefined;
   };
 
-  ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom'].forEach(function (name) {
+  ['onRouteEnd', 'onUnload', 'onPullDownRefresh', 'onReachBottom', 'onShareAppMessage'].forEach(function (name) {
     config[name] = function (...args) {
       utils.callLifecycle(this.root, name, args);
     };
@@ -139,12 +139,6 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
   config.onHide = function () {
     page._show = false;
     utils.callLifecycle(this.root, 'onHide');
-  };
-
-  config.onShareAppMessage = function () {
-    if (typeof root.onShareAppMessage === 'function') {
-      return root.onShareAppMessage()
-    }
   };
 
   return config;
