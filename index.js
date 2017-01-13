@@ -10,6 +10,8 @@ import Component from './component';
 import PropTypes from './prop-types';
 import _createPage from './create-page';
 
+let _Promise = Promise;
+
 // 特别指定的wx对象中不进行Promise封装的方法
 const noPromiseMethods = {
   clearStorage: 1,
@@ -32,6 +34,10 @@ const labrador = {
   // getCurrentPages() 优雅的封装
   get currentPages() {
     return getCurrentPages();
+  },
+
+  usePromise: function (PromiseConstructor) {
+    _Promise = PromiseConstructor;
   }
 };
 
@@ -80,7 +86,7 @@ Object.keys(wx).forEach((key) => {
   // 其余方法自动Promise化
   labrador[key] = function (obj) {
     obj = obj || {};
-    return new Promise((resolve, reject) => {
+    return new _Promise((resolve, reject) => {
       obj.success = resolve;
       obj.fail = (res) => {
         if (res && res.errMsg) {
