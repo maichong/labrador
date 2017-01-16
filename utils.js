@@ -16,8 +16,12 @@ import type Component from './component';
 export function getDebugObject(object: Object): Object {
   if (__DEV__) {
     if (typeof object !== 'object' || !object || object.asMutable) return object;
-    for (let key in object) {
-      if (object[key] && typeof object[key] === 'object' && !object[key].asMutable) return JSON.parse(JSON.stringify(object));
+    try {
+      for (let key in object) {
+        if (object[key] && typeof object[key] === 'object' && !object[key].asMutable) return JSON.parse(JSON.stringify(object));
+      }
+    } catch (e) {
+      // 对象中有递归引用，JSON.stringify 会报错
     }
   }
   return object;
