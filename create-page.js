@@ -44,7 +44,9 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
     let target = event.currentTarget || event.target;
     let path = target.dataset.path || '';
     // $Flow
-    let handler = target.dataset['bind' + event.type] || target.dataset['catch' + event.type];
+    let handler: string = target.dataset['bind' + event.type]
+      || target.dataset['catch' + event.type]
+      || target.dataset[event.type];
     while (path) {
       let index = path.indexOf('.');
       let key = '';
@@ -65,6 +67,7 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
         return undefined;
       }
     }
+    // $Flow 我们知道com在这里一定是一个组件，而非组件数组，但是Flow不知道
     if (com[handler]) {
       if (__DEV__) {
         // $Flow
