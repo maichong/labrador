@@ -41,13 +41,10 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
 
   config._dispatch = function (event: $Event): ?string {
     let com: $Child = this.root;
-    let target = event.currentTarget || event.target;
-    let path = target.dataset.path || '';
+    let path = event.currentTarget.dataset.path || '';
     // $Flow
-    let handler: string = target.dataset['bind' + event.type]
-      || target.dataset['catch' + event.type]
-      || target.dataset[event.type];
-    while (path) {
+    let handler = event.currentTarget.dataset['bind' + event.type] || event.currentTarget.dataset['catch' + event.type];
+    while(path) {
       let index = path.indexOf('.');
       let key = '';
       if (index === -1) {
@@ -57,13 +54,10 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
         key = path.substr(0, index);
         path = path.substr(index + 1);
       }
-      if (Array.isArray(com)) {
-        com = com[parseInt(key)];
-      } else {
-        com = com._children[key];
-      }
+
+      com = com._children[key];
       if (!com) {
-        console.error('Can not resolve component by path ' + target.dataset.path);
+        console.error('Can not resolve component by path ' + event.currentTarget.dataset.path);
         return undefined;
       }
     }
@@ -157,3 +151,4 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
 
   return config;
 };
+

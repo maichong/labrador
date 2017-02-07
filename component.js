@@ -10,6 +10,7 @@
 
 import deepEqual from 'deep-equal';
 import * as utils from './utils';
+import _keyBy from 'lodash/keyBy';
 
 /**
  * Labrador组件基类
@@ -19,14 +20,14 @@ export default class Component {
   // 默认props
   static defaultProps: $DataMap;
   // 组件props类型定义，必须为static
-  static propTypes: {[key: string]:$PropValidator};
+  static propTypes: { [key: string]: $PropValidator };
 
   // 组件是否已经初始化
   _inited: boolean;
   // 当前组件在列表中的索引，如果为undefined代表当前组件不在列表中
   _listIndex: number | void;
   // 当前组件在列表中的唯一key，即children()方法返回的配置项key属性，如果为undefined代表当前组件不在列表中
-  _listKey: string| number | void;
+  _listKey: string | number | void;
   // 当前组件的所有子组件KV对
   _children: $Children;
   // children() 方法返回的子控件配置缓存
@@ -204,7 +205,7 @@ export default class Component {
    * @param {number} [listKey]   组件在列表中的key定义
    * @private
    */
-  _setKey(key: string, parent?: Component, listIndex?: number, listKey?: string|number|void): void {
+  _setKey(key: string, parent?: Component, listIndex?: number, listKey?: string | number | void): void {
     this.key = key;
     this._listIndex = listIndex;
     this._listKey = listKey;
@@ -293,7 +294,6 @@ export default class Component {
         let config: $ChildConfig | Array<$ChildConfig> = configs[key];
         if (Array.isArray(config)) {
           // 如果子组件是一个列表
-
           let map = {};  // 依据列表中每个子组件key生成的原来组件映射
           let used = []; // 存放已知的子组件key，用来检测多个子组件是否重复使用同一个key
           let list: Array<Component> = children[key];
@@ -328,7 +328,8 @@ export default class Component {
           Object.keys(map).forEach((k) => {
             utils.callLifecycle(map[k], 'onUnload');
           });
-          children[key] = list;
+
+          children[key] = { _children: _keyBy(list, com => com._listKey) };
           // 子组件列表更新后，统一更新列表对应的页面数据
           let newData = [];
           list.forEach((com) => {
@@ -410,3 +411,4 @@ export default class Component {
     return component;
   }
 }
+
