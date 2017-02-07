@@ -9,8 +9,9 @@
 'use strict';
 
 import deepEqual from 'deep-equal';
-import * as utils from './utils';
+// $Flow
 import _keyBy from 'lodash/keyBy';
+import * as utils from './utils';
 
 /**
  * Labrador组件基类
