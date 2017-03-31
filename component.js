@@ -102,7 +102,7 @@ export default class Component {
 
     // this._setStateTimer = setTimeout(() => {
       // this._setStateTimer = 0;
-      // let state = this.state;
+      let state = this.state;
       // let stateChanged = false;
       // this._setStateQueue.forEach((item) => {
         let item = nextState;
@@ -123,23 +123,23 @@ export default class Component {
 
         // stateChanged = true;
 
-        // if (__DEV__) {
-        //   // Development 环境打印state变化
-        //   let original = utils.getDebugObject(state);
-        //   let append = utils.getDebugObject(item);
-        //   state = Object.assign({}, state, item);
-        //   console.log('%c%s setState(%o) : %o -> %o Component:%o',
-        //     'color:#2a8f99',
-        //     this.id, append, original,
-        //     utils.getDebugObject(state),
-        //     this
-        //   );
-        // } else {
-        //   state = Object.assign({}, state, item);
-        // }
+        if (__DEV__) {
+          // Development 环境打印state变化
+          let original = utils.getDebugObject(state);
+          let append = utils.getDebugObject(item);
+          state = Object.assign({}, state, item);
+          console.log('%c%s setState(%o) : %o -> %o Component:%o',
+            'color:#2a8f99',
+            this.id, append, original,
+            utils.getDebugObject(state),
+            this
+          );
+        } else {
+          state = Object.assign({}, state, item);
+        }
       // });
 
-      // this.state = state;
+      this.state = state;
       // this._setStateQueue = [];
       // this._setStateCallbacks.forEach((fn) => fn());
       // this._setStateCallbacks = [];
