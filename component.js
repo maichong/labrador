@@ -93,34 +93,35 @@ export default class Component {
     if (!this._inited) {
       console.error(this.id + ' 组件未自动初始化之前请勿调用setState()，如果在组件构造函数中请直接使用"this.state={}"赋值语法');
     }
-    this._setStateQueue.push(nextState);
-    if (callback) {
-      this._setStateCallbacks.push(callback);
-    }
+    // this._setStateQueue.push(nextState);
+    // if (callback) {
+    //   this._setStateCallbacks.push(callback);
+    // }
 
-    if (this._setStateTimer) return;
+    // if (this._setStateTimer) return;
 
-    this._setStateTimer = setTimeout(() => {
-      this._setStateTimer = 0;
+    // this._setStateTimer = setTimeout(() => {
+      // this._setStateTimer = 0;
       let state = this.state;
-      let stateChanged = false;
-      this._setStateQueue.forEach((item) => {
+      // let stateChanged = false;
+      // this._setStateQueue.forEach((item) => {
+        let item = nextState;
         if (typeof item === 'function') {
           item = item(state, this.props);
         }
-        if (!utils.shouldUpdate(state, item)) {
-          // 如果没有发生变化，则忽略更新，优化性能
-          if (__DEV__) {
-            console.log('%c%s setState(%o) ignored',
-              'color:#fcc',
-              this.id,
-              utils.getDebugObject(item)
-            );
-          }
-          return;
-        }
+        // if (!utils.shouldUpdate(state, item)) {
+        //   // 如果没有发生变化，则忽略更新，优化性能
+        //   if (__DEV__) {
+        //     console.log('%c%s setState(%o) ignored',
+        //       'color:#fcc',
+        //       this.id,
+        //       utils.getDebugObject(item)
+        //     );
+        //   }
+        //   return;
+        // }
 
-        stateChanged = true;
+        // stateChanged = true;
 
         if (__DEV__) {
           // Development 环境打印state变化
@@ -136,17 +137,17 @@ export default class Component {
         } else {
           state = Object.assign({}, state, item);
         }
-      });
+      // });
 
       this.state = state;
-      this._setStateQueue = [];
-      this._setStateCallbacks.forEach((fn) => fn());
-      this._setStateCallbacks = [];
+      // this._setStateQueue = [];
+      // this._setStateCallbacks.forEach((fn) => fn());
+      // this._setStateCallbacks = [];
 
-      if (!stateChanged) return;
+      // if (!stateChanged) return;
 
-      this._update();
-    });
+      this._update(item);
+    // });
   }
 
   /**
@@ -235,22 +236,26 @@ export default class Component {
    * 更新组件
    * @private
    */
-  _update() {
-    if (this._updateTimer) return;
-    this._updateTimer = setTimeout(() => {
-      this._updateTimer = 0;
+  _update(item) {
+    if (!item) item = this.state;
+    // if (this._updateTimer) return;
+    // this._updateTimer = setTimeout(() => {
+      // this._updateTimer = 0;
 
       // 内部state数据更新后，自动更新页面数据
 
       let path = this.path ? this.path + '.' : '';
       let newData = {};
       newData[path + 'props'] = this.props;
-      newData[path + 'state'] = this.state;
+      // newData[path + 'state'] = this.state;
+      for (let key in item) {
+        newData[path + 'state.' + key] = item[key];
+      }
       this.page.updateData(newData);
 
       // 更新子组件列表
-      this._updateChildren();
-    });
+      // this._updateChildren();
+    // });
   }
 
   /**

@@ -93,21 +93,26 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
       // if (__DEV__) {
       //   console.log('%c%s updateData(%o)', 'color:#2a8f99', page.__route__, utils.getDebugObject(newData));
       // }
-      let data = page.data;
+      // let data = page.data;
 
-      Object.keys(newData).forEach((path) => {
-        let dataMap = newData[path];
-        if (Array.isArray(dataMap)) {
-          // 如果是组件列表，需要与之前列表数据合并，这样主要为了在子组件嵌套情况下，不丢失底层子组件数据
-          let list = _get(data, path); //原有data中列表数据
-          let newList = dataMap.map((item) => buildListItem(list, item));
-          _set(data, path, newList);
-        } else {
-          _set(data, path.split('.'), dataMap);
-        }
-      });
+      // console.log('newData: ', newData)
 
-      page.setData(data);
+      // Object.keys(newData).forEach((path) => {
+      //   let dataMap = newData[path];
+      //   if (Array.isArray(dataMap)) {
+      //     // 如果是组件列表，需要与之前列表数据合并，这样主要为了在子组件嵌套情况下，不丢失底层子组件数据
+      //     let list = _get(data, path); //原有data中列表数据
+      //     let newList = dataMap.map((item) => buildListItem(list, item));
+      //     _set(data, path, newList);
+      //   } else {
+      //     _set(data, path.split('.'), dataMap);
+      //   }
+      // });
+
+      // console.log('data: ', data)
+
+      // page.setData(data);
+      page.setData(newData);
     };
 
     let root = page.root = new ComponentClass({});

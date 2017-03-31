@@ -82,12 +82,8 @@ Object.keys(wx).forEach((key) => {
     obj = obj || {};
     return new Promise((resolve, reject) => {
       obj.success = resolve;
-      obj.fail = (res) => {
-        if (res && res.errMsg) {
-          reject(new Error(res.errMsg));
-        } else {
+      obj.fail = res => {
           reject(res);
-        }
       };
       wx[key](obj);
     });
