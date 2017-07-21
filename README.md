@@ -1,5 +1,5 @@
 
-#[Labrador](https://github.com/maichong/labrador)
+# [Labrador](https://github.com/maichong/labrador)
 
 微信小程序组件化开发框架 
 
