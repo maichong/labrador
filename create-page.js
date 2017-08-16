@@ -142,8 +142,8 @@ module.exports = function createPage(ComponentClass: Class<Component>) {
   };
 
   if (ComponentClass.prototype.onShareAppMessage) {
-    config.onShareAppMessage = function () {
-      let share = this.root.onShareAppMessage();
+    config.onShareAppMessage = function (res) {
+      let share = this.root.onShareAppMessage(res);
       if (__DEV__ && !share) {
         console.error(this.root.id + ' onShareAppMessage() 没有返回分享数据');
       }
