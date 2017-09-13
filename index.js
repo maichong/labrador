@@ -19,6 +19,7 @@ const noPromiseMethods = {
   drawCanvas: 1,
   canvasToTempFilePath: 1,
   hideKeyboard: 1,
+  getBackgroundAudioManager: 1
 };
 
 const labrador = {
