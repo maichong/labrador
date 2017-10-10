@@ -19,6 +19,7 @@ const noPromiseMethods = {
   drawCanvas: 1,
   canvasToTempFilePath: 1,
   hideKeyboard: 1,
+  getBackgroundAudioManager: 1
 };
 
 const labrador = {
@@ -82,12 +83,8 @@ Object.keys(wx).forEach((key) => {
     obj = obj || {};
     return new Promise((resolve, reject) => {
       obj.success = resolve;
-      obj.fail = (res) => {
-        if (res && res.errMsg) {
-          reject(new Error(res.errMsg));
-        } else {
+      obj.fail = res => {
           reject(res);
-        }
       };
       wx[key](obj);
     });
