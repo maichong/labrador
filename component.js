@@ -254,7 +254,7 @@ export default class Component {
       this.page.updateData(newData);
 
       // 更新子组件列表
-      // this._updateChildren();
+      this._updateChildren();
     // });
   }
 
